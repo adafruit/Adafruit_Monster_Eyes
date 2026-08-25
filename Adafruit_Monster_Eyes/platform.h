@@ -21,12 +21,20 @@
 //   static void EYE_HOT_FN(renderEye)(int e) { ... }
 //
 #if defined(ARDUINO_ARCH_RP2040)
+/**
+ * @brief Place a hot function in RAM rather than flash.
+ * @param name Function name to qualify.
+ */
 #define EYE_HOT_FN(name) __not_in_flash_func(name)
 #else
 // ESP32 has IRAM_ATTR, which would work here syntactically, but IRAM is
 // scarce and renderEye is large -- enabling it can push a build over the
 // IRAM limit. Left off; try `#define EYE_HOT_FN(name) IRAM_ATTR name` if
 // profiling shows the render loop stalling on flash fetches.
+/**
+ * @brief No-op on chips where running from flash is not a bottleneck.
+ * @param name Function name to qualify.
+ */
 #define EYE_HOT_FN(name) name
 #endif
 
@@ -39,8 +47,8 @@
 // -1 means "use the BOOTSEL button", which needs no extra hardware but halts
 // XIP briefly to sample the QSPI CS pin. Set to a GPIO to use a real button.
 #ifndef SAFE_MODE_PIN
-#define SAFE_MODE_PIN                                                          \
-  -1 ///< GPIO whose press requests drive mode; -1 uses BOOTSEL
+/** GPIO whose press requests drive mode; -1 uses BOOTSEL */
+#define SAFE_MODE_PIN -1
 #endif
 
 static inline uint32_t platformFreeHeap(void) { return rp2040.getFreeHeap(); }
@@ -71,8 +79,8 @@ static inline bool platformSafeModeRequested(void) {
 
 // Most ESP32 boards wire the BOOT button to GPIO0.
 #ifndef SAFE_MODE_PIN
-#define SAFE_MODE_PIN                                                          \
-  0 ///< GPIO whose press requests drive mode; -1 uses BOOTSEL
+/** GPIO whose press requests drive mode; -1 uses BOOTSEL */
+#define SAFE_MODE_PIN 0
 #endif
 
 static inline uint32_t platformFreeHeap(void) { return ESP.getFreeHeap(); }
@@ -117,21 +125,21 @@ static inline bool platformSafeModeRequested(void) {
 
 // ---- Adafruit Feather RP2040 DVI ----------------------------------------
 #if defined(ARDUINO_ADAFRUIT_FEATHER_RP2040_DVI)
-#define EYE_BOARD_NAME                                                         \
-  "Feather RP2040 DVI" ///< Board profile that matched, for the startup banner
+/** Board profile that matched, for the startup banner */
+#define EYE_BOARD_NAME "Feather RP2040 DVI"
 #ifndef EYE_PANEL_DEFAULT
 #define EYE_PANEL_DEFAULT EYE_PANEL_DVI ///< Panel this board most likely has
 #endif
 #ifndef DVI_PIN_CONFIG
-#define DVI_PIN_CONFIG                                                         \
-  adafruit_feather_dvi_cfg ///< PicoDVI carrier board pin map
+/** PicoDVI carrier board pin map */
+#define DVI_PIN_CONFIG adafruit_feather_dvi_cfg
 #endif
 #define EYE_BOARD_DEFAULT_EYES 1 ///< Eye count that suits this board
 
 // ---- Adafruit Feather RP2040 --------------------------------------------
 #elif defined(ARDUINO_ADAFRUIT_FEATHER_RP2040)
-#define EYE_BOARD_NAME                                                         \
-  "Feather RP2040" ///< Board profile that matched, for the startup banner
+/** Board profile that matched, for the startup banner */
+#define EYE_BOARD_NAME "Feather RP2040"
 #ifndef EYE_PANEL_DEFAULT
 #define EYE_PANEL_DEFAULT EYE_PANEL_ST7789 ///< Panel this board most likely has
 #endif
@@ -139,21 +147,21 @@ static inline bool platformSafeModeRequested(void) {
 
 // ---- Adafruit Feather RP2350 ---------------------------------------------
 #elif defined(ARDUINO_ADAFRUIT_FEATHER_RP2350)
-#define EYE_BOARD_NAME                                                         \
-  "Feather RP2350" ///< Board profile that matched, for the startup banner
+/** Board profile that matched, for the startup banner */
+#define EYE_BOARD_NAME "Feather RP2350"
 #ifndef EYE_PANEL_DEFAULT
-#define EYE_PANEL_DEFAULT                                                      \
-  EYE_PANEL_GC9A01A ///< Panel this board most likely has
+/** Panel this board most likely has */
+#define EYE_PANEL_DEFAULT EYE_PANEL_GC9A01A
 #endif
 #define EYE_BOARD_DEFAULT_EYES 2 ///< Eye count that suits this board
 
 // ---- Adafruit Metro RP2350 ----------------------------------------------
 #elif defined(ARDUINO_ADAFRUIT_METRO_RP2350)
-#define EYE_BOARD_NAME                                                         \
-  "Metro RP2350" ///< Board profile that matched, for the startup banner
+/** Board profile that matched, for the startup banner */
+#define EYE_BOARD_NAME "Metro RP2350"
 #ifndef EYE_PANEL_DEFAULT
-#define EYE_PANEL_DEFAULT                                                      \
-  EYE_PANEL_GC9A01A ///< Panel this board most likely has
+/** Panel this board most likely has */
+#define EYE_PANEL_DEFAULT EYE_PANEL_GC9A01A
 #endif
 #ifndef TFT1_CS
 #define TFT1_CS 22 ///< Chip select for panel 1
@@ -162,8 +170,8 @@ static inline bool platformSafeModeRequested(void) {
 
 // ---- Adafruit Metro ESP32-S3 --------------------------------------------
 #elif defined(ARDUINO_ADAFRUIT_METRO_ESP32S3)
-#define EYE_BOARD_NAME                                                         \
-  "Metro ESP32-S3" ///< Board profile that matched, for the startup banner
+/** Board profile that matched, for the startup banner */
+#define EYE_BOARD_NAME "Metro ESP32-S3"
 #ifndef EYE_PANEL_DEFAULT
 #define EYE_PANEL_DEFAULT EYE_PANEL_ST7789 ///< Panel this board most likely has
 #endif
@@ -172,11 +180,11 @@ static inline bool platformSafeModeRequested(void) {
 // ---- RP2040 QT Py + EYESPI BFF ------------------------------------------
 #elif defined(ARDUINO_ADAFRUIT_QTPY_RP2040) ||                                 \
     defined(ARDUINO_ADAFRUIT_QTPY_ESP32S2)
-#define EYE_BOARD_NAME                                                         \
-  "QT Py + EYESPI BFF" ///< Board profile that matched, for the startup banner
+/** Board profile that matched, for the startup banner */
+#define EYE_BOARD_NAME "QT Py + EYESPI BFF"
 #ifndef EYE_PANEL_DEFAULT
-#define EYE_PANEL_DEFAULT                                                      \
-  EYE_PANEL_GC9A01A ///< Panel this board most likely has
+/** Panel this board most likely has */
+#define EYE_PANEL_DEFAULT EYE_PANEL_GC9A01A
 #endif
 #define EYE_BOARD_DEFAULT_EYES 1 ///< Eye count that suits this board
 #ifndef TFT_CS
@@ -203,8 +211,8 @@ static inline bool platformSafeModeRequested(void) {
 
 // ---- Anything else ------------------------------------------------------
 #else
-#define EYE_BOARD_NAME                                                         \
-  "generic" ///< Board profile that matched, for the startup banner
+/** Board profile that matched, for the startup banner */
+#define EYE_BOARD_NAME "generic"
 #ifndef EYE_PANEL_DEFAULT
 #define EYE_PANEL_DEFAULT EYE_PANEL_ST7789 ///< Panel this board most likely has
 #endif

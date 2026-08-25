@@ -16,17 +16,17 @@ jobs:
           # FS 0MB: assets live in the CircuitPython partition at 1 MB, so the
           # core must not also claim a filesystem at the end of flash.
           - name: feather-rp2040-dvi
-            fqbn: rp2040:rp2040:adafruit_feather_dvi:flash=8388608_0
+            fqbn: rp2040:rp2040:adafruit_feather_dvi:flash=8388608_0,usbstack=tinyusb
             core: rp2040
             defines: "-DEYE_PANEL=EYE_PANEL_DVI -DNUM_EYES=1"
 
           - name: metro-rp2350-gc9a01a-2eye
-            fqbn: rp2040:rp2040:adafruit_metro_rp2350:flash=16777216_0
+            fqbn: rp2040:rp2040:adafruit_metro_rp2350:flash=16777216_0,usbstack=tinyusb
             core: rp2040
             defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=2"
 
           - name: metro-esp32s3-st7789-2eye
-            fqbn: esp32:esp32:adafruit_metro_esp32s3:PartitionScheme=ffat,USBMode=default
+            fqbn: esp32:esp32:adafruit_metro_esp32s3:PartitionScheme=tinyuf2,USBMode=default
             core: esp32
             defines: "-DEYE_PANEL=EYE_PANEL_ST7789 -DNUM_EYES=2"
 
@@ -58,8 +58,10 @@ jobs:
             "Adafruit ILI9341" \
             "ArduinoJson" \
             "SdFat - Adafruit Fork" \
-            "Adafruit SPIFlash" \
-            "Adafruit TinyUSB Library"
+            "Adafruit SPIFlash"
+          if [ "${{ matrix.core }}" = "esp32" ]; then
+            arduino-cli lib install "Adafruit TinyUSB Library"
+          fi
           # PicoDVI is the Adafruit fork and is not in the library index.
           if [ "${{ matrix.core }}" = "rp2040" ]; then
             git clone --depth 1 https://github.com/adafruit/PicoDVI.git \

@@ -74,8 +74,8 @@ static int originX = 0, originY = 0, eyeSize = 0;
 
 static volatile int pending[NUM_EYES] = {};
 
-int displayColumnStride = -1; // Set to -stripeW once the eye size is known
-volatile uint32_t displayBusyMicros = 0;
+int displayColumnStride = -1;            ///< Row-to-row step in the buffer
+volatile uint32_t displayBusyMicros = 0; ///< Time pushing pixels
 
 static const int csPin[NUM_EYES] = {TFT_CS
 #if NUM_EYES > 1

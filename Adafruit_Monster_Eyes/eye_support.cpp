@@ -36,12 +36,15 @@
 #define TEX_MAX_W 512 ///< Widest texture the renderer can address
 #define TEX_MAX_H 128 ///< Tallest texture the renderer can address
 
+/** @brief Header fields the BMP loaders need from a bitmap. */
 struct BmpInfo {
-  int32_t width, height; // height always positive; see topDown
-  uint16_t bpp;
-  uint32_t dataOffset, rowSize;
-  bool topDown;
-  uint8_t whiteIndex; // 1-bit only: the lighter palette entry
+  int32_t width;       ///< Image width in pixels
+  int32_t height;      ///< Image height, always positive; see #topDown
+  uint16_t bpp;        ///< Bits per pixel; only 1 and 24 are supported
+  uint32_t dataOffset; ///< Byte offset of the first pixel row
+  uint32_t rowSize;    ///< Bytes per row, padded to a 4-byte boundary
+  bool topDown;        ///< true if rows are stored first-to-last
+  uint8_t whiteIndex;  ///< 1-bit only: the lighter of the two palette entries
 };
 
 static uint16_t rd16(const uint8_t *p) { return p[0] | (p[1] << 8); }
@@ -929,10 +932,15 @@ uint16_t scleraHeight(void) { return s_scleraH; }
 
 // Adapter so the BMP loaders can read an SdFat File32. Note seekSet() rather
 // than seek(), and read() returns a signed count (-1 on error).
+/** @brief Adapts an SdFat File32 to the BmpReader interface. */
 class FileBmpReader : public BmpReader {
-  File32 f;
+  File32 f; ///< Open file, or a closed handle if the path did not exist
 
 public:
+  /**
+   * @brief Open a file on the mounted volume.
+   * @param path Absolute path on the asset filesystem.
+   */
   explicit FileBmpReader(const char *path) {
     if (fsMounted)
       f = fatfs.open(path, FILE_READ);
@@ -941,6 +949,10 @@ public:
     if (f)
       f.close();
   }
+  /**
+   * @brief Did the file open?
+   * @return true if the file is open and readable.
+   */
   bool ok() const { return (bool)f; }
   bool seek(uint32_t pos) override { return f && f.seekSet(pos); }
   size_t read(void *buf, size_t len) override {

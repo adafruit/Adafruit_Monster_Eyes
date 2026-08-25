@@ -33,8 +33,8 @@
 #define EYE_PANEL_DVI 4     ///< HDMI/DVI output via PicoDVI (RP2 only)
 
 #ifndef EYE_PANEL
-#define EYE_PANEL                                                              \
-  EYE_PANEL_AUTO ///< Which panel is attached; see the EYE_PANEL_* values
+/** Which panel is attached; see the EYE_PANEL_* values */
+#define EYE_PANEL EYE_PANEL_AUTO
 #endif
 
 // One eye or two. 0 means "whatever suits this board" -- 1 where the adapter
@@ -97,8 +97,8 @@
 // panel self-tests, memory reports and the render/transfer
 // breakdown are all silent, and the boot delay is skipped.
 #ifndef EYE_DEBUG
-#define EYE_DEBUG                                                              \
-  0 ///< 1 enables startup logging, self-tests and frame profiling
+/** 1 enables startup logging, self-tests and frame profiling */
+#define EYE_DEBUG 0
 #endif
 
 // The rest of the settings are advanced, likely won't need/want to be adjusted
@@ -113,8 +113,8 @@
 
 // SPI clock
 #ifndef TFT_SPI_HZ
-#define TFT_SPI_HZ                                                             \
-  40000000 ///< SPI clock for pixel data; panel init uses the driver default
+/** SPI clock for pixel data; panel init uses the driver default */
+#define TFT_SPI_HZ 40000000
 #endif
 
 // Orientation
@@ -122,22 +122,22 @@
 #define TFT_ROTATION 0 ///< Adafruit_GFX rotation, 0-3 (Adafruit backend only)
 #endif
 #ifndef ESP_LCD_INVERT
-#define ESP_LCD_INVERT                                                         \
-  1 ///< Invert panel colours; most ST7789 and GC9A01A need this
+/** Invert panel colours; most ST7789 and GC9A01A need this */
+#define ESP_LCD_INVERT 1
 #endif
 #ifndef ESP_LCD_SWAP_XY
 #define ESP_LCD_SWAP_XY 0 ///< Exchange rows and columns (esp_lcd backend)
 #endif
 #ifndef ESP_LCD_MIRROR_X
-#define ESP_LCD_MIRROR_X                                                       \
-  0 ///< Mirror horizontally; GC9A01A stock orientation wants 1
+/** Mirror horizontally; GC9A01A stock orientation wants 1 */
+#define ESP_LCD_MIRROR_X 0
 #endif
 #ifndef ESP_LCD_MIRROR_Y
 #define ESP_LCD_MIRROR_Y 0 ///< Mirror vertically (esp_lcd backend)
 #endif
 #ifndef EYE_FORCE_ADAFRUIT_BACKEND
-#define EYE_FORCE_ADAFRUIT_BACKEND                                             \
-  0 ///< 1 uses Adafruit_GFX even where esp_lcd would serve
+/** 1 uses Adafruit_GFX even where esp_lcd would serve */
+#define EYE_FORCE_ADAFRUIT_BACKEND 0
 #endif
 
 // Delay before any hardware is touched. If the sketch faults later, the USB
@@ -145,11 +145,11 @@
 // reset the board for the next upload. Set to 0 once things are stable.
 #ifndef STARTUP_GRACE_MS
 #if EYE_DEBUG
-#define STARTUP_GRACE_MS                                                       \
-  3000 ///< Delay before touching hardware, so USB enumerates first
+/** Delay before touching hardware, so USB enumerates first */
+#define STARTUP_GRACE_MS 3000
 #else
-#define STARTUP_GRACE_MS                                                       \
-  0 ///< Delay before touching hardware, so USB enumerates first
+/** Delay before touching hardware, so USB enumerates first */
+#define STARTUP_GRACE_MS 0
 #endif
 #endif
 
@@ -157,28 +157,28 @@
 // driver; PATHTEST repeats it through the actual render path. A panel dark in
 // both means wiring; dark only in the second means the transfer path.
 #ifndef DISPLAY_SELFTEST
-#define DISPLAY_SELFTEST                                                       \
-  EYE_DEBUG ///< Run the driver-level red/blue panel test at boot
+/** Run the driver-level red/blue panel test at boot */
+#define DISPLAY_SELFTEST EYE_DEBUG
 #endif
 #ifndef DISPLAY_PATHTEST
-#define DISPLAY_PATHTEST                                                       \
-  EYE_DEBUG ///< Repeat the panel test through the render path
+/** Repeat the panel test through the render path */
+#define DISPLAY_PATHTEST EYE_DEBUG
 #endif
 
 // Report render vs transfer time once a second.
 #ifndef PROFILE_FRAME
-#define PROFILE_FRAME                                                          \
-  EYE_DEBUG ///< Report render versus transfer time once a second
+/** Report render versus transfer time once a second */
+#define PROFILE_FRAME EYE_DEBUG
 #endif
 
 // Turn these off one at a time to bisect a startup hang.
 #ifndef ENABLE_BOOTSEL_DRIVE
-#define ENABLE_BOOTSEL_DRIVE                                                   \
-  1 ///< Allow BOOTSEL at reset to enter USB drive mode
+/** Allow BOOTSEL at reset to enter USB drive mode */
+#define ENABLE_BOOTSEL_DRIVE 1
 #endif
 #ifndef ENABLE_STORAGE
-#define ENABLE_STORAGE                                                         \
-  1 ///< Mount the asset filesystem; 0 uses built-in defaults
+/** Mount the asset filesystem; 0 uses built-in defaults */
+#define ENABLE_STORAGE 1
 #endif
 
 // =========================================================================
@@ -187,15 +187,15 @@
 
 // Heap kept clear of textures, for stack and driver buffers.
 #ifndef HEAP_RESERVE
-#define HEAP_RESERVE                                                           \
-  10000 ///< Bytes kept clear of textures for stack and driver buffers
+/** Bytes kept clear of textures for stack and driver buffers */
+#define HEAP_RESERVE 10000
 #endif
 
 // Smallest texture worth having. If the eye size requested does not leave
 // this much over, setup() shrinks the eye rather than rendering it flat.
 #ifndef MIN_TEXTURE_BUDGET
-#define MIN_TEXTURE_BUDGET                                                     \
-  10000 ///< Below this the eye shrinks rather than render flat
+/** Below this the eye shrinks rather than render flat */
+#define MIN_TEXTURE_BUDGET 10000
 #endif
 
 // Columns batched into one address window. Each window costs a fixed command
@@ -203,22 +203,22 @@
 // divide the eye size; the backend picks the largest divisor at or below this.
 // Costs stripe * eyeSize * 4 bytes.
 #ifndef TFT_STRIPE_COLS
-#define TFT_STRIPE_COLS                                                        \
-  16 ///< Columns batched into one address window (Adafruit backend)
+/** Columns batched into one address window (Adafruit backend) */
+#define TFT_STRIPE_COLS 16
 #endif
 #ifndef ESP_LCD_STRIPE_COLS
-#define ESP_LCD_STRIPE_COLS                                                    \
-  16 ///< Columns batched into one draw_bitmap (esp_lcd backend)
+/** Columns batched into one draw_bitmap (esp_lcd backend) */
+#define ESP_LCD_STRIPE_COLS 16
 #endif
 
 // RP2 only: batched SPI writes, and DMA so transfers overlap rendering.
 #ifndef TFT_FAST_SPI
-#define TFT_FAST_SPI                                                           \
-  1 ///< RP2 only: batch pixels straight into the SPI hardware
+/** RP2 only: batch pixels straight into the SPI hardware */
+#define TFT_FAST_SPI 1
 #endif
 #ifndef TFT_DMA
-#define TFT_DMA                                                                \
-  1 ///< RP2 only: send columns by DMA so transfers overlap rendering
+/** RP2 only: send columns by DMA so transfers overlap rendering */
+#define TFT_DMA 1
 #endif
 
 // =========================================================================
@@ -226,13 +226,13 @@
 // =========================================================================
 
 #ifndef CONFIG_FILENAME
-#define CONFIG_FILENAME                                                        \
-  "/config.eye" ///< Path to the JSON eye configuration on the drive
+/** Path to the JSON eye configuration on the drive */
+#define CONFIG_FILENAME "/config.eye"
 #endif
 // Which per-eye block a single-eye build reads from a two-eye .eye file.
 #ifndef EYE_SIDE
-#define EYE_SIDE                                                               \
-  "left" ///< Which per-eye block a single-eye build reads, "left" or "right"
+/** Which per-eye block a single-eye build reads, "left" or "right" */
+#define EYE_SIDE "left"
 #endif
 
 // 0 means "fill the display". The three radii scale with it when left at
@@ -250,8 +250,8 @@
 #define SLIT_PUPIL_RADIUS 0 ///< Fallback slit pupil; 0 round, -1 auto
 #endif
 #ifndef COVERAGE
-#define COVERAGE                                                               \
-  0.6f ///< Fraction of the eyeball the polar map spans; keep above 0.55
+/** Fraction of the eyeball the polar map spans; keep above 0.55 */
+#define COVERAGE 0.6f
 #endif
 
 #ifndef PUPIL_COLOR
@@ -280,29 +280,29 @@
 // closed rather than staring. On by default, matching upstream M4_Eyes.
 // TRACK_FACTOR is 1.0 - squint; config.eye sets "squint" instead.
 #ifndef TRACKING
-#define TRACKING                                                               \
-  1 ///< Upper eyelid follows the iris, so the eye rests partly closed
+/** Upper eyelid follows the iris, so the eye rests partly closed */
+#define TRACKING 1
 #endif
 #ifndef TRACK_FACTOR
 #define TRACK_FACTOR 0.5f ///< 1.0 minus squint; how far the lid drops at rest
 #endif
 #ifndef GAZE_MAX
-#define GAZE_MAX                                                               \
-  3000000 ///< Longest wait between major eye movements, microseconds
+/** Longest wait between major eye movements, microseconds */
+#define GAZE_MAX 3000000
 #endif
 #ifndef IRIS_SPIN
-#define IRIS_SPIN                                                              \
-  -18.0f ///< Fallback iris rotation in RPM, positive is clockwise
+/** Fallback iris rotation in RPM, positive is clockwise */
+#define IRIS_SPIN -18.0f
 #endif
 #ifndef IRIS_START_ANGLE
-#define IRIS_START_ANGLE                                                       \
-  512 ///< Fallback initial iris rotation, 0-1023 counter-clockwise
+/** Fallback initial iris rotation, 0-1023 counter-clockwise */
+#define IRIS_START_ANGLE 512
 #endif
 #ifndef EYELID_MIRROR
 #define EYELID_MIRROR 1 ///< Mirror the eyelid shape horizontally
 #endif
 // Two eyes toe in slightly, in polar-map pixels. Ignored for one eye.
 #ifndef EYE_FIXATE
-#define EYE_FIXATE                                                             \
-  7 ///< Convergence of two eyes toward the face centre, map pixels
+/** Convergence of two eyes toward the face centre, map pixels */
+#define EYE_FIXATE 7
 #endif

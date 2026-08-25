@@ -19,8 +19,9 @@ static DVIGFX16 dvi(DVI_RESOLUTION, DVI_PIN_CONFIG);
 static int fbW = 0, fbH = 0;
 static int originX[NUM_EYES], originY = 0, eyeSize = 0;
 
-int displayColumnStride = 0;
-volatile uint32_t displayBusyMicros = 0; // Always 0: nothing to push
+int displayColumnStride = 0; ///< Row-to-row step in the buffer
+volatile uint32_t displayBusyMicros =
+    0; ///< Time pushing pixels // Always 0: nothing to push
 
 bool displayBegin(void) {
   // This allocates the framebuffer -- 153,600 bytes at 320x240x16. It is the

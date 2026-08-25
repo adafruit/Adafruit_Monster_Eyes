@@ -28,8 +28,8 @@
 // to an "FS 0MB" option so the core does not also claim the end of flash and
 // overlap. Keep the sketch under 1 MB so it cannot collide with the start.
 
-#define USE_CIRCUITPY_PARTITION                                                \
-  1 ///< Use CircuitPython flash layout rather than the core FS
+/** Use CircuitPython flash layout rather than the core FS */
+#define USE_CIRCUITPY_PARTITION 1
 
 #if defined(USE_CIRCUITPY_PARTITION)
 Adafruit_FlashTransport_RP2040_CPY flashTransport; ///< Asset flash

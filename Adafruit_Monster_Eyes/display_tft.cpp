@@ -31,24 +31,24 @@
 
 #if TFT_DRIVER == TFT_DRIVER_ST7789
 #include <Adafruit_ST7789.h>
-#define TFT_CLASS                                                              \
-  Adafruit_ST7789 ///< Adafruit driver class for the selected panel
+/** Adafruit driver class for the selected panel */
+#define TFT_CLASS Adafruit_ST7789
 static Adafruit_ST7789 tft0(&TFT_SPI_PORT, TFT_CS, TFT_DC, -1);
 #if NUM_EYES > 1
 static Adafruit_ST7789 tft1(&TFT1_SPI_PORT, TFT1_CS, TFT1_DC, -1);
 #endif
 #elif TFT_DRIVER == TFT_DRIVER_ILI9341
 #include <Adafruit_ILI9341.h>
-#define TFT_CLASS                                                              \
-  Adafruit_ILI9341 ///< Adafruit driver class for the selected panel
+/** Adafruit driver class for the selected panel */
+#define TFT_CLASS Adafruit_ILI9341
 static Adafruit_ILI9341 tft0(&TFT_SPI_PORT, TFT_DC, TFT_CS, -1);
 #if NUM_EYES > 1
 static Adafruit_ILI9341 tft1(&TFT1_SPI_PORT, TFT1_DC, TFT1_CS, -1);
 #endif
 #elif TFT_DRIVER == TFT_DRIVER_GC9A01A
 #include <Adafruit_GC9A01A.h>
-#define TFT_CLASS                                                              \
-  Adafruit_GC9A01A ///< Adafruit driver class for the selected panel
+/** Adafruit driver class for the selected panel */
+#define TFT_CLASS Adafruit_GC9A01A
 static Adafruit_GC9A01A tft0(&TFT_SPI_PORT, TFT_DC, TFT_CS, -1);
 #if NUM_EYES > 1
 static Adafruit_GC9A01A tft1(&TFT1_SPI_PORT, TFT1_DC, TFT1_CS, -1);
@@ -108,11 +108,11 @@ static TFT_CLASS *panel[NUM_EYES] = {&tft0
 // Two column buffers per eye when DMA is on: the renderer fills one while the
 // other is still being sent. Without DMA a single buffer is enough.
 #if TFT_FAST_SPI_ACTIVE && TFT_DMA
-#define COLUMN_BUFFERS                                                         \
-  2 ///< Column buffers; 2 lets a DMA transfer overlap rendering
+/** Column buffers; 2 lets a DMA transfer overlap rendering */
+#define COLUMN_BUFFERS 2
 #else
-#define COLUMN_BUFFERS                                                         \
-  1 ///< Column buffers; 2 lets a DMA transfer overlap rendering
+/** Column buffers; 2 lets a DMA transfer overlap rendering */
+#define COLUMN_BUFFERS 1
 #endif
 static const int csPin[NUM_EYES] = {TFT_CS
 #if NUM_EYES > 1
@@ -167,8 +167,8 @@ static void dmaSettle(int eye) {
 static int panelW = 0, panelH = 0;
 static int originX = 0, originY = 0, eyeSize = 0;
 
-int displayColumnStride = -1; // Renderer walks backward through scratch
-volatile uint32_t displayBusyMicros = 0;
+int displayColumnStride = -1;            ///< Row-to-row step in the buffer
+volatile uint32_t displayBusyMicros = 0; ///< Time pushing pixels
 
 // Reset every panel ONCE, before any of them is initialized.
 //

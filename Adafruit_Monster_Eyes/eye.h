@@ -32,12 +32,28 @@
 // Verbose output, compiled out entirely when EYE_DEBUG is 0. Genuine failures
 // use Serial directly so they are reported either way.
 #if EYE_DEBUG
+/**
+ * @brief Print a formatted diagnostic line; compiled out when EYE_DEBUG is 0.
+ * @param ... printf-style format string and arguments.
+ */
 #define DBG(...) Serial.printf(__VA_ARGS__)
+/**
+ * @brief Print a diagnostic line; compiled out when EYE_DEBUG is 0.
+ * @param s Text to print.
+ */
 #define DBGLN(s) Serial.println(s)
 #else
+/**
+ * @brief No-op form of DBG(); EYE_DEBUG is 0.
+ * @param ... Ignored.
+ */
 #define DBG(...)                                                               \
   do {                                                                         \
   } while (0)
+/**
+ * @brief No-op form of DBGLN(); EYE_DEBUG is 0.
+ * @param s Ignored.
+ */
 #define DBGLN(s)                                                               \
   do {                                                                         \
   } while (0)
@@ -58,8 +74,8 @@
 // Resolve EYE_PANEL_AUTO against the board profile.
 #if EYE_PANEL == EYE_PANEL_AUTO
 #undef EYE_PANEL
-#define EYE_PANEL                                                              \
-  EYE_PANEL_DEFAULT ///< Which panel is attached; see the EYE_PANEL_* values
+/** Which panel is attached; see the EYE_PANEL_* values */
+#define EYE_PANEL EYE_PANEL_DEFAULT
 #endif
 
 #if EYE_PANEL == EYE_PANEL_DVI
@@ -69,8 +85,8 @@
 #define EYE_DISPLAY EYE_DISPLAY_DVI ///< Backend chosen from the panel and chip
 #elif defined(ARDUINO_ARCH_ESP32) && !EYE_FORCE_ADAFRUIT_BACKEND &&            \
     ((EYE_PANEL == EYE_PANEL_ST7789) || (EYE_PANEL == EYE_PANEL_GC9A01A))
-#define EYE_DISPLAY                                                            \
-  EYE_DISPLAY_ESP_LCD ///< Backend chosen from the panel and chip
+/** Backend chosen from the panel and chip */
+#define EYE_DISPLAY EYE_DISPLAY_ESP_LCD
 #else
 #define EYE_DISPLAY EYE_DISPLAY_TFT ///< Backend chosen from the panel and chip
 #endif
@@ -81,14 +97,14 @@
 #define TFT_DRIVER_GC9A01A 2 ///< Adafruit driver: GC9A01A
 
 #if EYE_PANEL == EYE_PANEL_GC9A01A
-#define TFT_DRIVER                                                             \
-  TFT_DRIVER_GC9A01A ///< Adafruit driver matching the selected panel
+/** Adafruit driver matching the selected panel */
+#define TFT_DRIVER TFT_DRIVER_GC9A01A
 #elif EYE_PANEL == EYE_PANEL_ILI9341
-#define TFT_DRIVER                                                             \
-  TFT_DRIVER_ILI9341 ///< Adafruit driver matching the selected panel
+/** Adafruit driver matching the selected panel */
+#define TFT_DRIVER TFT_DRIVER_ILI9341
 #else
-#define TFT_DRIVER                                                             \
-  TFT_DRIVER_ST7789 ///< Adafruit driver matching the selected panel
+/** Adafruit driver matching the selected panel */
+#define TFT_DRIVER TFT_DRIVER_ST7789
 #endif
 
 // ESP-IDF ships an ST7789 panel driver in core. GC9A01A is not in core, so the
@@ -98,11 +114,11 @@
 #define ESP_LCD_DRV_GC9A01A 1 ///< esp_lcd panel: GC9A01A, vendor init sent here
 
 #if EYE_PANEL == EYE_PANEL_GC9A01A
-#define ESP_LCD_DRIVER                                                         \
-  ESP_LCD_DRV_GC9A01A ///< esp_lcd panel matching the selected panel
+/** esp_lcd panel matching the selected panel */
+#define ESP_LCD_DRIVER ESP_LCD_DRV_GC9A01A
 #else
-#define ESP_LCD_DRIVER                                                         \
-  ESP_LCD_DRV_ST7789 ///< esp_lcd panel matching the selected panel
+/** esp_lcd panel matching the selected panel */
+#define ESP_LCD_DRIVER ESP_LCD_DRV_ST7789
 #endif
 
 #ifndef ESP_LCD_HOST
@@ -116,11 +132,11 @@
 // Is the RP2 batched-SPI burst actually in play?
 #if (EYE_DISPLAY == EYE_DISPLAY_TFT) && TFT_FAST_SPI &&                        \
     defined(ARDUINO_ARCH_RP2040)
-#define TFT_FAST_SPI_ACTIVE                                                    \
-  1 ///< 1 when the RP2 batched-SPI burst is compiled in
+/** 1 when the RP2 batched-SPI burst is compiled in */
+#define TFT_FAST_SPI_ACTIVE 1
 #else
-#define TFT_FAST_SPI_ACTIVE                                                    \
-  0 ///< 1 when the RP2 batched-SPI burst is compiled in
+/** 1 when the RP2 batched-SPI burst is compiled in */
+#define TFT_FAST_SPI_ACTIVE 0
 #endif
 
 // Byte order the render loop writes in. It costs nothing either way -- the
@@ -133,9 +149,18 @@
 //   esp_lcd        BIG-ENDIAN; the buffer goes to DMA verbatim
 #if EYE_DISPLAY == EYE_DISPLAY_ESP_LCD
 #define DISPLAY_BIG_ENDIAN 1 ///< 1 when the backend wants byte-swapped pixels
+/**
+ * @brief Convert a colour to the byte order this backend wants: byte-swapped
+ * for the wire.
+ * @param v Native-endian RGB565 colour.
+ */
 #define OUT16(v) __builtin_bswap16((uint16_t)(v))
 #else
 #define DISPLAY_BIG_ENDIAN 0 ///< 1 when the backend wants byte-swapped pixels
+/**
+ * @brief Convert a colour to the byte order this backend wants: unchanged.
+ * @param v Native-endian RGB565 colour.
+ */
 #define OUT16(v) ((uint16_t)(v))
 #endif
 
@@ -187,6 +212,8 @@ bool displayBegin(void);
  *
  * With two eyes sharing a single framebuffer this is half the width, so a
  * config asking for more is clamped rather than overlapping its neighbour.
+ *
+ * @return Maximum eye width and height in pixels.
  */
 int displayMaxEyeSize(void);
 /**
@@ -208,7 +235,10 @@ void displayClear(uint16_t color);
 /** @brief Start a frame. */
 void displayFrameBegin(void);
 
-/** @brief Start one eye; opens the bus transaction on SPI backends. */
+/**
+ * @brief Start one eye; opens the bus transaction on SPI backends.
+ * @param eye Eye index, 0 to NUM_EYES-1.
+ */
 void displayEyeBegin(int eye);
 
 /**
@@ -220,14 +250,23 @@ void displayEyeBegin(int eye);
  * negative row stride, while the SPI backends return the end of a stripe
  * buffer so the renderer fills it in the order the panel wants.
  *
+ * @param eye Eye index, 0 to NUM_EYES-1.
+ * @param x   Column index, 0 to the eye size minus one.
  * @return Buffer to write into, or NULL if no buffer could be allocated.
  */
 uint16_t *displayColumn(int eye, int x);
 
-/** @brief Hand column @p x back; the backend may send it now or batch it. */
+/**
+ * @brief Hand a finished column back; the backend may send it or batch it.
+ * @param eye Eye index, 0 to NUM_EYES-1.
+ * @param x   Column index, 0 to the eye size minus one.
+ */
 void displayColumnDone(int eye, int x);
 
-/** @brief Finish one eye, flushing anything still in flight. */
+/**
+ * @brief Finish one eye, flushing anything still in flight.
+ * @param eye Eye index, 0 to NUM_EYES-1.
+ */
 void displayEyeEnd(int eye);
 
 /** @brief Finish the frame. */
@@ -256,7 +295,7 @@ extern int displayColumnStride;
 // Microseconds spent inside displayColumnDone() since last cleared, i.e. time
 // pushing pixels at the panel. Zero on DVI, where a column is already in the
 // framebuffer and there is nothing to push.
-extern volatile uint32_t displayBusyMicros;
+extern volatile uint32_t displayBusyMicros; ///< Microseconds spent pushing
 
 // ===========================================================================
 // SETTINGS
@@ -325,6 +364,7 @@ void eyeSettingsDefaults(void);
  * defaults. A single-eye build also applies the @ref EYE_SIDE block, so
  * two-eye .eye files still do something sensible.
  *
+ * @param filename Path to the JSON configuration on the drive.
  * @return false if the file is absent or unparseable; settings stay usable.
  */
 bool eyeSettingsLoad(const char *filename);
@@ -341,11 +381,17 @@ void eyeSettingsFinalize(void);
 // STORAGE
 // ===========================================================================
 
-/** @brief Mount the FAT volume holding config.eye and the BMPs. */
+/**
+ * @brief Mount the FAT volume holding config.eye and the bitmaps.
+ * @return true if the volume mounted; false leaves built-in defaults in use.
+ */
 bool eyeStorageBegin(void);
 /** @brief Stop reading the filesystem so flash stays quiet while rendering. */
 void eyeStorageEnd(void);
-/** @brief True if the user asked for the USB drive instead of the eye. */
+/**
+ * @brief Has the user asked for the USB drive instead of the eye?
+ * @return true if the safe-mode button or BOOTSEL is held.
+ */
 bool eyeStorageDriveModeRequested(void);
 /**
  * @brief Export flash over USB and never return.
@@ -373,9 +419,17 @@ extern int mapDiameter;     ///< Twice mapRadius, for bounds checks
 bool eyeTablesInit(void);
 /** @brief Release the polar and displacement maps. */
 void eyeTablesFree(void);
-/** @brief Convert a length in screen pixels to polar-map pixels. */
+/**
+ * @brief Convert a length in screen pixels to polar-map pixels.
+ * @param in Length in screen pixels.
+ * @return The equivalent length in polar-map pixels.
+ */
 float screen2map(int in);
-/** @brief Inverse of screen2map(). */
+/**
+ * @brief Inverse of screen2map().
+ * @param in Length in polar-map pixels.
+ * @return The equivalent length in screen pixels.
+ */
 float map2screen(int in);
 
 // ===========================================================================
