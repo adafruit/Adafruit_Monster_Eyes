@@ -11,8 +11,8 @@
 
 #if EYE_DISPLAY == EYE_DISPLAY_DVI
 
-#  include <Arduino.h>
-#  include <PicoDVI.h>
+#include <Arduino.h>
+#include <PicoDVI.h>
 
 static DVIGFX16 dvi(DVI_RESOLUTION, DVI_PIN_CONFIG);
 
@@ -26,7 +26,8 @@ bool displayBegin(void) {
   // This allocates the framebuffer -- 153,600 bytes at 320x240x16. It is the
   // single largest allocation in the sketch, so it must happen before the
   // polar maps
-  if (!dvi.begin()) return false;
+  if (!dvi.begin())
+    return false;
   fbW = dvi.width();
   fbH = dvi.height();
   displayColumnStride = -fbW;
@@ -42,22 +43,20 @@ int displayMaxEyeSize(void) {
 void displaySetEyeSize(int size) {
   eyeSize = size;
   originY = (fbH - size) / 2;
-  if (originY < 0) originY = 0;
+  if (originY < 0)
+    originY = 0;
   const int slice = fbW / NUM_EYES;
   for (int e = 0; e < NUM_EYES; e++) {
     originX[e] = e * slice + (slice - size) / 2;
-    if (originX[e] < 0) originX[e] = 0;
+    if (originX[e] < 0)
+      originX[e] = 0;
   }
 }
 
-void displayClear(uint16_t color) {
-  dvi.fillScreen(color);
-}
+void displayClear(uint16_t color) { dvi.fillScreen(color); }
 
 void displayFrameBegin(void) {}
-void displayEyeBegin(int eye) {
-  (void)eye;
-}
+void displayEyeBegin(int eye) { (void)eye; }
 
 uint16_t *displayColumn(int eye, int x) {
   // Start at the TOP of the column; the renderer walks up-screen
@@ -69,9 +68,7 @@ void displayColumnDone(int eye, int x) {
   (void)x;
 }
 
-void displayEyeEnd(int eye) {
-  (void)eye;
-}
+void displayEyeEnd(int eye) { (void)eye; }
 void displayFrameEnd(void) {}
 
 void displaySelfTest(void) {

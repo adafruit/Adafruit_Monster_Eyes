@@ -12,18 +12,18 @@
  * @note Requires ArduinoJson 7.x (JsonDocument). On 6.x the declaration in
  *       eyeSettingsLoad() becomes StaticJsonDocument<2048>.
  */
-#define ARDUINOJSON_ENABLE_COMMENTS 1
-#include <ArduinoJson.h>
-#include <Arduino.h>
-#include <SPI.h>
+#define ARDUINOJSON_ENABLE_COMMENTS 1 ///< Allow // comments inside config.eye
 #include "SdFat_Adafruit_Fork.h"
+#include "eye.h"
+#include "flash_config.h"
 #include <Adafruit_SPIFlash.h>
 #include <Adafruit_TinyUSB.h>
-#include "flash_config.h"
+#include <Arduino.h>
+#include <ArduinoJson.h>
+#include <SPI.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-#include "eye.h"
 
 // ===========================================================================
 // 1. BMP LOADING
@@ -33,8 +33,8 @@
 
 // Angular resolution past 512 is wasted: the renderer indexes as
 // (angle * width / 1024) with angle 0-1023, and distance is 0-127.
-#define TEX_MAX_W 512
-#define TEX_MAX_H 128
+#define TEX_MAX_W 512 ///< Widest texture the renderer can address
+#define TEX_MAX_H 128 ///< Tallest texture the renderer can address
 
 struct BmpInfo {
   int32_t width, height; // height always positive; see topDown
@@ -44,9 +44,7 @@ struct BmpInfo {
   uint8_t whiteIndex; // 1-bit only: the lighter palette entry
 };
 
-static uint16_t rd16(const uint8_t *p) {
-  return p[0] | (p[1] << 8);
-}
+static uint16_t rd16(const uint8_t *p) { return p[0] | (p[1] << 8); }
 static uint32_t rd32(const uint8_t *p) {
   return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) |
          ((uint32_t)p[3] << 24);
@@ -54,9 +52,12 @@ static uint32_t rd32(const uint8_t *p) {
 
 static bool bmpReadHeader(BmpReader &r, BmpInfo &info) {
   uint8_t hdr[54];
-  if (!r.seek(0)) return false;
-  if (r.read(hdr, sizeof(hdr)) != sizeof(hdr)) return false;
-  if ((hdr[0] != 'B') || (hdr[1] != 'M')) return false;
+  if (!r.seek(0))
+    return false;
+  if (r.read(hdr, sizeof(hdr)) != sizeof(hdr))
+    return false;
+  if ((hdr[0] != 'B') || (hdr[1] != 'M'))
+    return false;
 
   info.dataOffset = rd32(&hdr[10]);
   uint32_t dibSize = rd32(&hdr[14]);
@@ -65,23 +66,30 @@ static bool bmpReadHeader(BmpReader &r, BmpInfo &info) {
   info.bpp = rd16(&hdr[28]);
   uint32_t compression = rd32(&hdr[30]);
 
-  if (dibSize < 40) return false;     // BITMAPINFOHEADER+
-  if (compression != 0) return false; // BI_RGB only
-  if ((info.bpp != 1) && (info.bpp != 24)) return false;
-  if (w <= 0) return false;
+  if (dibSize < 40)
+    return false; // BITMAPINFOHEADER+
+  if (compression != 0)
+    return false; // BI_RGB only
+  if ((info.bpp != 1) && (info.bpp != 24))
+    return false;
+  if (w <= 0)
+    return false;
 
   info.topDown = (h < 0); // Negative height means top-down rows
   info.height = info.topDown ? -h : h;
   info.width = w;
-  if (info.height <= 0) return false;
+  if (info.height <= 0)
+    return false;
 
   info.rowSize = (((uint32_t)w * info.bpp + 31) / 32) * 4; // 4-byte padded
 
   info.whiteIndex = 1;
   if (info.bpp == 1) {
     uint8_t pal[8]; // 2 entries, each B,G,R,reserved
-    if (!r.seek(14 + dibSize)) return false;
-    if (r.read(pal, sizeof(pal)) != sizeof(pal)) return false;
+    if (!r.seek(14 + dibSize))
+      return false;
+    if (r.read(pal, sizeof(pal)) != sizeof(pal))
+      return false;
     int lum0 = pal[0] + pal[1] + pal[2];
     int lum1 = pal[4] + pal[5] + pal[6];
     info.whiteIndex = (lum1 > lum0) ? 1 : 0;
@@ -96,16 +104,20 @@ static bool bmpReadHeader(BmpReader &r, BmpInfo &info) {
 bool bmpLoadEyelid(BmpReader &r, uint8_t *openTable, uint8_t *closedTable,
                    int size, bool isUpper) {
   BmpInfo info;
-  if (!bmpReadHeader(r, info)) return false;
-  if (info.bpp != 1) return false;
-  if (info.height < 2) return false;
+  if (!bmpReadHeader(r, info))
+    return false;
+  if (info.bpp != 1)
+    return false;
+  if (info.height < 2)
+    return false;
 
   const uint8_t init = isUpper ? (uint8_t)(size - 1) : 0;
   memset(openTable, init, size);
   memset(closedTable, init, size);
 
   uint16_t *minRow = (uint16_t *)malloc((size_t)size * 2 * sizeof(uint16_t));
-  if (!minRow) return false;
+  if (!minRow)
+    return false;
   uint16_t *maxRow = &minRow[size];
   for (int i = 0; i < size; i++) {
     minRow[i] = 0xFFFF;
@@ -131,21 +143,25 @@ bool bmpLoadEyelid(BmpReader &r, uint8_t *openTable, uint8_t *closedTable,
 
     for (int32_t sx = 0; sx < info.width; sx++) {
       uint8_t bit = (row[sx >> 3] >> (7 - (sx & 7))) & 1;
-      if (bit != info.whiteIndex) continue;
+      if (bit != info.whiteIndex)
+        continue;
       int dx = (int)((int64_t)sx * size / info.width);
       if (dx < 0)
         dx = 0;
       else if (dx >= size)
         dx = size - 1;
-      if ((uint16_t)imageRow < minRow[dx]) minRow[dx] = (uint16_t)imageRow;
-      if ((uint16_t)imageRow > maxRow[dx]) maxRow[dx] = (uint16_t)imageRow;
+      if ((uint16_t)imageRow < minRow[dx])
+        minRow[dx] = (uint16_t)imageRow;
+      if ((uint16_t)imageRow > maxRow[dx])
+        maxRow[dx] = (uint16_t)imageRow;
     }
   }
   free(row);
 
   if (ok) {
     for (int dx = 0; dx < size; dx++) {
-      if (minRow[dx] == 0xFFFF) continue; // No data; keep the init value
+      if (minRow[dx] == 0xFFFF)
+        continue; // No data; keep the init value
       int my = (int)((int64_t)minRow[dx] * (size - 1) / (info.height - 1));
       int My = (int)((int64_t)maxRow[dx] * (size - 1) / (info.height - 1));
       if (my < 0)
@@ -172,8 +188,10 @@ bool bmpLoadEyelid(BmpReader &r, uint8_t *openTable, uint8_t *closedTable,
 bool bmpLoadTexture(BmpReader &r, uint16_t **data, uint16_t *width,
                     uint16_t *height, uint32_t maxBytes) {
   BmpInfo info;
-  if (!bmpReadHeader(r, info)) return false;
-  if (info.bpp != 24) return false;
+  if (!bmpReadHeader(r, info))
+    return false;
+  if (info.bpp != 24)
+    return false;
 
   // Start at the source size capped to what the renderer can address, then
   // shrink the longer dimension until it fits the budget.
@@ -192,10 +210,12 @@ bool bmpLoadTexture(BmpReader &r, uint16_t **data, uint16_t *width,
         dw--;
     }
   }
-  if ((uint32_t)dw * dh * 2 > maxBytes) return false;
+  if ((uint32_t)dw * dh * 2 > maxBytes)
+    return false;
 
   uint16_t *dst = (uint16_t *)eyeMalloc((size_t)dw * dh * 2);
-  if (!dst) return false;
+  if (!dst)
+    return false;
   uint8_t *row = (uint8_t *)malloc(info.rowSize);
   if (!row) {
     free(dst);
@@ -237,12 +257,12 @@ bool bmpLoadTexture(BmpReader &r, uint16_t **data, uint16_t *width,
 // ===========================================================================
 
 // The QSPI flash chip and the FAT volume
-Adafruit_SPIFlash flash(&flashTransport);
-FatVolume fatfs;
+Adafruit_SPIFlash flash(&flashTransport); ///< Flash chip driver
+FatVolume fatfs; ///< FAT volume holding config.eye and the bitmaps
 static bool fsMounted = false;
 
-EyeSettings settings;
-EyeVariant eyeVariant[NUM_EYES];
+EyeSettings settings;            ///< Live settings, shared by every eye
+EyeVariant eyeVariant[NUM_EYES]; ///< Per-eye overrides
 static void seedVariants(void);
 
 void eyeSettingsDefaults(void) {
@@ -326,7 +346,8 @@ static int32_t dwim(JsonVariantConst v, int32_t def = 0) {
       return ((cc[0] & 0xF8) << 8) | ((cc[1] & 0xFC) << 3) | (cc[2] >> 3);
     }
     if (a.size() >= 1) {
-      if (a[0].is<int>()) return a[0].as<int>();
+      if (a[0].is<int>())
+        return a[0].as<int>();
       return strtol(a[0].as<const char *>(), NULL, 0);
     }
   }
@@ -342,7 +363,8 @@ static void copyStr(char *dst, JsonVariantConst v) {
 
 // Apply one JSON object: the document root, or a per-eye sub-object on top.
 static void applyObject(JsonVariantConst o) {
-  if (o.isNull()) return;
+  if (o.isNull())
+    return;
   JsonVariantConst v;
 
   settings.displaySize = dwim(o["displaySize"], settings.displaySize);
@@ -368,24 +390,31 @@ static void applyObject(JsonVariantConst o) {
   // 16-bit eyelidColor is also accepted now that the byte-repeat trick the
   // SPI-DMA path relied on is gone.
   v = o["eyelidIndex"];
-  if (!v.isNull()) settings.eyelidColor = (uint16_t)(dwim(v) & 0xFF) * 0x0101;
+  if (!v.isNull())
+    settings.eyelidColor = (uint16_t)(dwim(v) & 0xFF) * 0x0101;
   v = o["eyelidColor"];
   if (!v.isNull())
     settings.eyelidColor = (uint16_t)dwim(v, settings.eyelidColor);
 
   v = o["pupilMin"];
-  if (v.is<float>() || v.is<int>()) settings.pupilMin = v.as<float>();
+  if (v.is<float>() || v.is<int>())
+    settings.pupilMin = v.as<float>();
   v = o["pupilMax"];
-  if (v.is<float>() || v.is<int>()) settings.pupilMax = v.as<float>();
+  if (v.is<float>() || v.is<int>())
+    settings.pupilMax = v.as<float>();
   v = o["tracking"];
-  if (v.is<bool>()) settings.tracking = v.as<bool>();
+  if (v.is<bool>())
+    settings.tracking = v.as<bool>();
   v = o["squint"];
-  if (v.is<float>() || v.is<int>()) settings.trackFactor = 1.0f - v.as<float>();
+  if (v.is<float>() || v.is<int>())
+    settings.trackFactor = 1.0f - v.as<float>();
 
   v = o["irisSpin"];
-  if (v.is<float>() || v.is<int>()) settings.irisSpin = v.as<float>();
+  if (v.is<float>() || v.is<int>())
+    settings.irisSpin = v.as<float>();
   v = o["scleraSpin"];
-  if (v.is<float>() || v.is<int>()) settings.scleraSpin = v.as<float>();
+  if (v.is<float>() || v.is<int>())
+    settings.scleraSpin = v.as<float>();
 
   v = o["irisAngle"];
   if (v.is<int>())
@@ -405,7 +434,8 @@ static void applyObject(JsonVariantConst o) {
   if (v.is<bool>() || v.is<int>())
     settings.scleraMirror = v.as<bool>() ? 1023 : 0;
   v = o["eyelidMirror"];
-  if (v.is<bool>() || v.is<int>()) settings.eyelidMirror = v.as<bool>();
+  if (v.is<bool>() || v.is<int>())
+    settings.eyelidMirror = v.as<bool>();
 
   copyStr(settings.irisFile, o["irisTexture"]);
   copyStr(settings.scleraFile, o["scleraTexture"]);
@@ -417,12 +447,15 @@ static void applyObject(JsonVariantConst o) {
 // texture keys inside a "left"/"right" block are ignored in a two-eye build,
 // because both eyes share one set of polar maps and one copy of each texture.
 static void applyVariant(JsonVariantConst o, EyeVariant &v) {
-  if (o.isNull()) return;
+  if (o.isNull())
+    return;
   JsonVariantConst x;
   x = o["irisSpin"];
-  if (x.is<float>() || x.is<int>()) v.irisSpin = x.as<float>();
+  if (x.is<float>() || x.is<int>())
+    v.irisSpin = x.as<float>();
   x = o["scleraSpin"];
-  if (x.is<float>() || x.is<int>()) v.scleraSpin = x.as<float>();
+  if (x.is<float>() || x.is<int>())
+    v.scleraSpin = x.as<float>();
   x = o["irisAngle"];
   if (x.is<int>())
     v.irisStartAngle = 1023 - (x.as<int>() & 1023);
@@ -434,15 +467,19 @@ static void applyVariant(JsonVariantConst o, EyeVariant &v) {
   else if (x.is<float>())
     v.scleraStartAngle = 1023 - ((int)(x.as<float>() * 1024.0f) & 1023);
   x = o["irisMirror"];
-  if (x.is<bool>() || x.is<int>()) v.irisMirror = x.as<bool>() ? 1023 : 0;
+  if (x.is<bool>() || x.is<int>())
+    v.irisMirror = x.as<bool>() ? 1023 : 0;
   x = o["scleraMirror"];
-  if (x.is<bool>() || x.is<int>()) v.scleraMirror = x.as<bool>() ? 1023 : 0;
+  if (x.is<bool>() || x.is<int>())
+    v.scleraMirror = x.as<bool>() ? 1023 : 0;
   x = o["eyelidMirror"];
-  if (x.is<bool>() || x.is<int>()) v.eyelidMirror = x.as<bool>();
+  if (x.is<bool>() || x.is<int>())
+    v.eyelidMirror = x.as<bool>();
 }
 
 bool eyeSettingsLoad(const char *filename) {
-  if (!fsMounted) return false;
+  if (!fsMounted)
+    return false;
   File32 f = fatfs.open(filename, FILE_READ);
   if (!f) {
     DBG("No %s on drive; using built-in defaults\n", filename);
@@ -474,8 +511,10 @@ void eyeSettingsFinalize(void) {
   // 0 means "fill whatever the display can give one eye"; setup() resolves it
   // once the backend is up. Anything else is clamped to a sane range.
   if (settings.displaySize != 0) {
-    if (settings.displaySize < 64) settings.displaySize = 64;
-    if (settings.displaySize > 240) settings.displaySize = 240;
+    if (settings.displaySize < 64)
+      settings.displaySize = 64;
+    if (settings.displaySize > 240)
+      settings.displaySize = 240;
     settings.displaySize &= ~1; // Keep even; the renderer halves it
   }
 
@@ -517,7 +556,8 @@ void eyeSettingsFinalize(void) {
   // eyeball. Solving for the ratio the stock 240px demon eye uses (a gaze
   // radius of about 0.30 * mapRadius) gives mapRadius ~= 0.98 * displaySize.
   settings.coverage = settings.coverageRequested;
-  if (settings.displaySize == 0) return; // Not resolved yet; nothing to check
+  if (settings.displaySize == 0)
+    return; // Not resolved yet; nothing to check
   const float wantMapRadius = 0.9818f * (float)settings.displaySize;
   const float needCoverage =
       wantMapRadius / ((float)settings.eyeRadius * (float)M_PI);
@@ -537,8 +577,10 @@ void eyeSettingsFinalize(void) {
   else if (settings.coverage > 1.0f)
     settings.coverage = 1.0f;
 
-  if (settings.pupilMin < 0.0f) settings.pupilMin = 0.0f;
-  if (settings.pupilMax > 1.0f) settings.pupilMax = 1.0f;
+  if (settings.pupilMin < 0.0f)
+    settings.pupilMin = 0.0f;
+  if (settings.pupilMax > 1.0f)
+    settings.pupilMax = 1.0f;
   if (settings.pupilMin > settings.pupilMax) {
     float t = settings.pupilMin;
     settings.pupilMin = settings.pupilMax;
@@ -603,13 +645,9 @@ bool eyeStorageBegin(void) {
   return true;
 }
 
-void eyeStorageEnd(void) {
-  fsMounted = false;
-}
+void eyeStorageEnd(void) { fsMounted = false; }
 
-bool eyeStorageDriveModeRequested(void) {
-  return platformSafeModeRequested();
-}
+bool eyeStorageDriveModeRequested(void) { return platformSafeModeRequested(); }
 
 void eyeStorageRunDriveMode(void) {
   DBGLN("=== USB DRIVE MODE ===");
@@ -617,7 +655,8 @@ void eyeStorageRunDriveMode(void) {
 
   if (!flash.begin()) {
     Serial.println("Flash chip init failed; cannot export a drive.");
-    for (;;) delay(1000);
+    for (;;)
+      delay(1000);
   }
   fsMounted = fatfs.begin(&flash);
   if (!fsMounted)
@@ -661,10 +700,12 @@ void eyeStorageRunDriveMode(void) {
 void eyePanelReset(const int *rstPins, int count) {
   bool any = false;
   for (int i = 0; i < count; i++) {
-    if (rstPins[i] < 0) continue;
+    if (rstPins[i] < 0)
+      continue;
     bool dup = false;
     for (int j = 0; j < i; j++)
-      if (rstPins[j] == rstPins[i]) dup = true;
+      if (rstPins[j] == rstPins[i])
+        dup = true;
     if (dup) {
       DBG("  panel %d shares RST GPIO%d\n", i, rstPins[i]);
       continue;
@@ -673,13 +714,16 @@ void eyePanelReset(const int *rstPins, int count) {
     digitalWrite(rstPins[i], HIGH);
     any = true;
   }
-  if (!any) return;
+  if (!any)
+    return;
   delay(10);
   for (int i = 0; i < count; i++)
-    if (rstPins[i] >= 0) digitalWrite(rstPins[i], LOW);
+    if (rstPins[i] >= 0)
+      digitalWrite(rstPins[i], LOW);
   delay(20);
   for (int i = 0; i < count; i++)
-    if (rstPins[i] >= 0) digitalWrite(rstPins[i], HIGH);
+    if (rstPins[i] >= 0)
+      digitalWrite(rstPins[i], HIGH);
   delay(150); // Controllers want ~120 ms after reset before commands
   DBGLN("  panels reset");
 }
@@ -691,8 +735,10 @@ void displayPathTest(int size) {
     displayEyeBegin(e);
     for (int x = 0; x < size; x++) {
       uint16_t *p = displayColumn(e, x);
-      if (!p) break;
-      for (int y = 0; y < size; y++, p += stride) *p = OUT16(c[e]);
+      if (!p)
+        break;
+      for (int y = 0; y < size; y++, p += stride)
+        *p = OUT16(c[e]);
       displayColumnDone(e, x);
     }
     displayEyeEnd(e);
@@ -733,7 +779,8 @@ float map2screen(int in) {
 static bool calcDisplacement(void) {
   const int half = settings.displaySize / 2;
   displace = (uint8_t *)eyeMalloc(half * half);
-  if (!displace) return false;
+  if (!displace)
+    return false;
 
   const float eyeRadius2 = (float)(settings.eyeRadius * settings.eyeRadius);
   uint8_t *ptr = displace;
@@ -765,7 +812,8 @@ static bool calcMap(void) {
   const int pixels = mapRadius * mapRadius;
 
   polarAngle = (uint8_t *)eyeMalloc(pixels * 2); // One alloc for both tables
-  if (!polarAngle) return false;
+  if (!polarAngle)
+    return false;
   polarDist = (int8_t *)&polarAngle[pixels];
 
   const float mapRadius2 = (float)mapRadius * (float)mapRadius;
@@ -805,7 +853,8 @@ static bool calcMap(void) {
       for (int x = 0; x < mapRadius; x++) {
         float dx = (float)x + 0.5f;
         float d2 = dx * dx + dy2;
-        if (d2 > irisRadius2) continue;
+        if (d2 > irisRadius2)
+          continue;
         float xp = (float)x + 0.5f;
         for (int i = 126; i >= 0; i--) {
           float ratio = (float)i / 128.0f; // 0.0 open .. just under 1.0 slit
@@ -844,7 +893,8 @@ bool eyeTablesInit(void) {
   mapRadius =
       (int)((float)settings.eyeRadius * (float)M_PI * settings.coverage + 0.5f);
   mapDiameter = mapRadius * 2;
-  if (mapRadius < 8) return false;
+  if (mapRadius < 8)
+    return false;
   if (!calcMap()) {
     eyeTablesFree();
     return false;
@@ -872,18 +922,10 @@ const uint16_t *irisData = NULL, *scleraData = NULL;
 static uint16_t s_irisW = 0, s_irisH = 0, s_scleraW = 0, s_scleraH = 0;
 static uint16_t s_irisSolid = 0, s_scleraSolid = 0; // 1x1 fallback storage
 
-uint16_t irisWidth(void) {
-  return s_irisW;
-}
-uint16_t irisHeight(void) {
-  return s_irisH;
-}
-uint16_t scleraWidth(void) {
-  return s_scleraW;
-}
-uint16_t scleraHeight(void) {
-  return s_scleraH;
-}
+uint16_t irisWidth(void) { return s_irisW; }
+uint16_t irisHeight(void) { return s_irisH; }
+uint16_t scleraWidth(void) { return s_scleraW; }
+uint16_t scleraHeight(void) { return s_scleraH; }
 
 // Adapter so the BMP loaders can read an SdFat File32. Note seekSet() rather
 // than seek(), and read() returns a signed count (-1 on error).
@@ -892,15 +934,18 @@ class FileBmpReader : public BmpReader {
 
 public:
   explicit FileBmpReader(const char *path) {
-    if (fsMounted) f = fatfs.open(path, FILE_READ);
+    if (fsMounted)
+      f = fatfs.open(path, FILE_READ);
   }
   ~FileBmpReader() {
-    if (f) f.close();
+    if (f)
+      f.close();
   }
   bool ok() const { return (bool)f; }
   bool seek(uint32_t pos) override { return f && f.seekSet(pos); }
   size_t read(void *buf, size_t len) override {
-    if (!f) return 0;
+    if (!f)
+      return 0;
     int n = f.read(buf, len);
     return (n < 0) ? 0 : (size_t)n;
   }
@@ -957,7 +1002,8 @@ static bool loadOneTexture(const char *path, const uint16_t **data, uint16_t *w,
 
 bool eyeMediaLoad(int size, uint32_t texBudget) {
   uint8_t *block = (uint8_t *)eyeMalloc((size_t)size * 4); // All four tables
-  if (!block) return false;
+  if (!block)
+    return false;
   upperOpen = &block[0];
   upperClosed = &block[size];
   lowerOpen = &block[size * 2];
@@ -968,7 +1014,8 @@ bool eyeMediaLoad(int size, uint32_t texBudget) {
   loadOneEyelid(settings.lowerFile, lowerOpen, lowerClosed, size, false);
 
   uint32_t scleraBudget = texBudget / 8;
-  if (scleraBudget > 4096) scleraBudget = 4096;
+  if (scleraBudget > 4096)
+    scleraBudget = 4096;
 
   loadOneTexture(settings.irisFile, &irisData, &s_irisW, &s_irisH,
                  texBudget - scleraBudget, &s_irisSolid, settings.irisColor,

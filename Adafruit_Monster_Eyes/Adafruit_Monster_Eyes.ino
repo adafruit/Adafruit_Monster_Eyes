@@ -9,8 +9,8 @@
  * @see settings.h for everything a user configures.
  */
 
-#include <math.h>
 #include "eye.h"
+#include <math.h>
 
 static int SIZE, HALF;
 static float gazeRadius = 1.0f;
@@ -75,10 +75,10 @@ void setup() {
   DBGLN("\n--- RP2 Eyes ---");
   DBG("%s, sys clock %lu Hz\n", PLATFORM_NAME, (unsigned long)platformCpuHz());
   DBG("board: %s, %d eye(s), panel %s\n", EYE_BOARD_NAME, NUM_EYES,
-    (EYE_PANEL == EYE_PANEL_DVI)       ? "DVI"
-    : (EYE_PANEL == EYE_PANEL_GC9A01A) ? "GC9A01A"
-    : (EYE_PANEL == EYE_PANEL_ILI9341) ? "ILI9341"
-                                       : "ST7789");
+      (EYE_PANEL == EYE_PANEL_DVI)       ? "DVI"
+      : (EYE_PANEL == EYE_PANEL_GC9A01A) ? "GC9A01A"
+      : (EYE_PANEL == EYE_PANEL_ILI9341) ? "ILI9341"
+                                         : "ST7789");
   // The number that matters for frame rate is fast internal RAM, not total
   // heap -- on chips with PSRAM those are very different figures.
   DBG("fast RAM available for eye data: %u\n", platformLargestFreeBlock());
@@ -110,7 +110,8 @@ void setup() {
     // Framebuffer allocation failed. Almost always means the eye tables or
     // something else claimed RAM first, or the resolution is too large.
     pinMode(LED_BUILTIN, OUTPUT);
-    for (;;) digitalWrite(LED_BUILTIN, (millis() / 200) & 1);
+    for (;;)
+      digitalWrite(LED_BUILTIN, (millis() / 200) & 1);
   }
   DBG("Display ready, max eye %d. Free heap: %u\n", displayMaxEyeSize(),
       platformFreeHeap());
@@ -123,7 +124,8 @@ void setup() {
   // single framebuffer this is half the width, so a config asking for more
   // gets quietly reduced rather than overlapping its neighbor.
   // displaySize 0 in config.eye means "fill the display".
-  if (settings.displaySize <= 0) settings.displaySize = displayMaxEyeSize();
+  if (settings.displaySize <= 0)
+    settings.displaySize = displayMaxEyeSize();
   if (settings.displaySize > displayMaxEyeSize())
     settings.displaySize = displayMaxEyeSize();
   eyeSettingsFinalize(); // Re-derive coverage for the final displaySize
@@ -147,7 +149,8 @@ void setup() {
     if (!eyeTablesInit()) {
       if (settings.displaySize <= 96) {
         Serial.println("Cannot allocate eye tables even at minimum size.");
-        for (;;) delay(1000);
+        for (;;)
+          delay(1000);
       }
       settings.displaySize -= 16;
       settings.eyeRadius = 0; // Re-derive proportionally
@@ -193,7 +196,8 @@ void setup() {
   DBGLN("[5] media");
   if (!eyeMediaLoad(settings.displaySize, texBudget)) {
     Serial.println("Eyelid table allocation failed.");
-    for (;;) delay(1000);
+    for (;;)
+      delay(1000);
   }
 
   // Nothing else reads the filesystem; let go of it so flash stays quiet.
@@ -240,7 +244,8 @@ static void gazeRadiusInit(void) {
 
   const float travel = 0.2433f * (float)SIZE; // Allowed screen-pixel travel
   float s = travel / ((float)M_PI_2 * (float)settings.eyeRadius);
-  if (s > 0.999f) s = 0.999f;
+  if (s > 0.999f)
+    s = 0.999f;
   const float rScreen = (float)mapRadius * asinf(s);
   // 10% tolerance. The two formulas agree exactly only at the ratio they were
   // calibrated on (eyeRadius 125 at displaySize 240); at other sizes the
@@ -253,7 +258,8 @@ static void gazeRadiusInit(void) {
         settings.eyeRadius, SIZE, SIZE / 2 + 5);
     r = rScreen;
   }
-  if (r < 1.0f) r = 1.0f;
+  if (r < 1.0f)
+    r = 1.0f;
   gazeRadius = r;
   DBG("Gaze radius %.1f map px (%.1f screen px)\n", gazeRadius,
       map2screen((int)gazeRadius));
@@ -296,7 +302,8 @@ static void updateGaze(uint32_t t) {
         saccadeInterval = 0;
       } else {
         float rMicro = rFull * (0.07f / 0.75f);
-        if (rMicro < 1.0f) rMicro = 1.0f;
+        if (rMicro < 1.0f)
+          rMicro = 1.0f;
         float dx = random(-rMicro, rMicro);
         float h2 = rMicro * rMicro - dx * dx;
         float h = (h2 > 0.0f) ? sqrtf(h2) : 0.0f;
@@ -339,7 +346,8 @@ static void updateIris(void) {
     sum += n / (float)iexp;
   }
   irisValue = irisMin + (sum * irisRange);
-  if ((++irisFrame) >= (1 << IRIS_LEVELS)) irisFrame = 0;
+  if ((++irisFrame) >= (1 << IRIS_LEVELS))
+    irisFrame = 0;
 }
 
 static void updateBlinks(uint32_t t) {
@@ -373,7 +381,8 @@ static void updateEye(uint8_t e, uint32_t t) {
     int ix = (int)map2screen((float)mapRadius - E.eyeX) + HALF;
     int iy = (int)map2screen((float)mapRadius - E.eyeY) + HALF;
     iy += (int)(settings.irisRadius * settings.trackFactor);
-    if (eyeVariant[e].eyelidMirror) ix = SIZE - 1 - ix;
+    if (eyeVariant[e].eyelidMirror)
+      ix = SIZE - 1 - ix;
     if (ix < 0)
       ix = 0;
     else if (ix > SIZE - 1)
@@ -404,7 +413,8 @@ static void updateEye(uint8_t e, uint32_t t) {
       }
     } else {
       E.blinkFactor = (float)(t - E.blinkStartTime) / (float)E.blinkDuration;
-      if (E.blinkState == DEBLINK) E.blinkFactor = 1.0f - E.blinkFactor;
+      if (E.blinkState == DEBLINK)
+        E.blinkFactor = 1.0f - E.blinkFactor;
     }
   }
 
@@ -471,14 +481,16 @@ static void EYE_HOT_FN(renderEye)(uint8_t e) {
 
     if (y1 >= y2) {
       // Lid closed far enough that no eye pixels show in this column
-      for (int y = 0; y < SIZE; y++, dst += stride) *dst = eyelidColor;
+      for (int y = 0; y < SIZE; y++, dst += stride)
+        *dst = eyelidColor;
       displayColumnDone(e, x);
       continue;
     }
 
     // Lower eyelid
     int y = 0;
-    for (; y < y1; y++, dst += stride) *dst = eyelidColor;
+    for (; y < y1; y++, dst += stride)
+      *dst = eyelidColor;
 
     // Displacement lookup setup for this column. Only one quadrant of the
     // table exists; sign and axis swapping cover the rest.
@@ -571,7 +583,8 @@ static void EYE_HOT_FN(renderEye)(uint8_t e) {
     }
 
     // Upper eyelid
-    for (; y < SIZE; y++, dst += stride) *dst = eyelidColor;
+    for (; y < SIZE; y++, dst += stride)
+      *dst = eyelidColor;
 
     displayColumnDone(e, x);
   }

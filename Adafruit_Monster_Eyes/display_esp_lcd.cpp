@@ -15,12 +15,12 @@
 
 #if EYE_DISPLAY == EYE_DISPLAY_ESP_LCD
 
-#  include <Arduino.h>
-#  include <driver/spi_master.h>
-#  include <esp_lcd_panel_io.h>
-#  include <esp_lcd_panel_vendor.h>
-#  include <esp_lcd_panel_ops.h>
-#  include <esp_heap_caps.h>
+#include <Arduino.h>
+#include <driver/spi_master.h>
+#include <esp_heap_caps.h>
+#include <esp_lcd_panel_io.h>
+#include <esp_lcd_panel_ops.h>
+#include <esp_lcd_panel_vendor.h>
 
 // GC9A01A vendor initialisation, transcribed from Adafruit_GC9A01A.cpp.
 // Format: command, length, data... A length with 0x80 set means "then wait".
@@ -28,7 +28,7 @@
 // The GC9A01A shares ST77xx's addressing commands (CASET 0x2A, RASET 0x2B,
 // RAMWR 0x2C), so esp_lcd's ST7789 panel object drives it correctly for
 // pixels -- only this power-on sequence differs
-#  if ESP_LCD_DRIVER == ESP_LCD_DRV_GC9A01A
+#if ESP_LCD_DRIVER == ESP_LCD_DRV_GC9A01A
 static const uint8_t gc9a01aInit[] = {
     0xEF, 0,    0xEB, 1,    0x14, 0xFE, 0,    0xEF, 0,    0xEB, 1,    0x14,
     0x84, 1,    0x40, 0x85, 1,    0xFF, 0x86, 1,    0xFF, 0x87, 1,    0xFF,
@@ -59,7 +59,7 @@ static const uint8_t gc9a01aInit[] = {
     0x29, 0x80,          // Display on, then wait
     0x00                 // End of list
 };
-#  endif
+#endif
 
 static esp_lcd_panel_io_handle_t ioHandle[NUM_EYES] = {};
 static esp_lcd_panel_handle_t panelHandle[NUM_EYES] = {};
@@ -78,22 +78,22 @@ int displayColumnStride = -1; // Set to -stripeW once the eye size is known
 volatile uint32_t displayBusyMicros = 0;
 
 static const int csPin[NUM_EYES] = {TFT_CS
-#  if NUM_EYES > 1
+#if NUM_EYES > 1
                                     ,
                                     TFT1_CS
-#  endif
+#endif
 };
 static const int dcPin[NUM_EYES] = {TFT_DC
-#  if NUM_EYES > 1
+#if NUM_EYES > 1
                                     ,
                                     TFT1_DC
-#  endif
+#endif
 };
 static const int rstPin[NUM_EYES] = {TFT_RST
-#  if NUM_EYES > 1
+#if NUM_EYES > 1
                                      ,
                                      TFT1_RST
-#  endif
+#endif
 };
 
 static bool IRAM_ATTR onColorDone(esp_lcd_panel_io_handle_t io,
@@ -102,7 +102,8 @@ static bool IRAM_ATTR onColorDone(esp_lcd_panel_io_handle_t io,
   (void)io;
   (void)ev;
   int e = (int)(intptr_t)ctx;
-  if (pending[e] > 0) pending[e]--;
+  if (pending[e] > 0)
+    pending[e]--;
   return false;
 }
 
@@ -122,7 +123,7 @@ static void drain(int e, int limit) {
   }
 }
 
-#  if ESP_LCD_DRIVER == ESP_LCD_DRV_GC9A01A
+#if ESP_LCD_DRIVER == ESP_LCD_DRV_GC9A01A
 static void sendVendorInit(esp_lcd_panel_io_handle_t io) {
   const uint8_t *p = gc9a01aInit;
   uint8_t cmd;
@@ -131,10 +132,11 @@ static void sendVendorInit(esp_lcd_panel_io_handle_t io) {
     uint8_t n = x & 0x7F;
     esp_lcd_panel_io_tx_param(io, cmd, n ? p : NULL, n);
     p += n;
-    if (x & 0x80) delay(150);
+    if (x & 0x80)
+      delay(150);
   }
 }
-#  endif
+#endif
 
 bool displayBegin(void) {
   spi_bus_config_t bus = {};
@@ -177,33 +179,33 @@ bool displayBegin(void) {
     // Reset is driven once
     pc.reset_gpio_num = -1;
     pc.bits_per_pixel = 16;
-#  if ESP_LCD_DRIVER == ESP_LCD_DRV_GC9A01A
-#    define EYE_RGB_ORDER_BGR 1
-#  else
-#    define EYE_RGB_ORDER_BGR 0
-#  endif
-#  if defined(ESP_IDF_VERSION) && defined(ESP_IDF_VERSION_VAL)
-#    if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 2, 0)
+#if ESP_LCD_DRIVER == ESP_LCD_DRV_GC9A01A
+#define EYE_RGB_ORDER_BGR 1 ///< 1 when the panel expects BGR element order
+#else
+#define EYE_RGB_ORDER_BGR 0 ///< 1 when the panel expects BGR element order
+#endif
+#if defined(ESP_IDF_VERSION) && defined(ESP_IDF_VERSION_VAL)
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 2, 0)
     pc.rgb_ele_order = EYE_RGB_ORDER_BGR ? LCD_RGB_ELEMENT_ORDER_BGR
                                          : LCD_RGB_ELEMENT_ORDER_RGB;
-#    else
+#else
     pc.rgb_endian = EYE_RGB_ORDER_BGR ? LCD_RGB_ENDIAN_BGR : LCD_RGB_ENDIAN_RGB;
-#    endif
-#  else
+#endif
+#else
     pc.rgb_endian = EYE_RGB_ORDER_BGR ? LCD_RGB_ENDIAN_BGR : LCD_RGB_ENDIAN_RGB;
-#  endif
+#endif
 
     if (esp_lcd_new_panel_st7789(ioHandle[e], &pc, &panelHandle[e]) != ESP_OK) {
       Serial.printf("panel %d failed\n", e);
       return false;
     }
-#  if ESP_LCD_DRIVER == ESP_LCD_DRV_GC9A01A
+#if ESP_LCD_DRIVER == ESP_LCD_DRV_GC9A01A
     // The vendor sequence does everything panel_init() would (sleep out,
     // MADCTL, COLMOD, display on)
     sendVendorInit(ioHandle[e]);
-#  else
+#else
     esp_lcd_panel_init(panelHandle[e]);
-#  endif
+#endif
     esp_lcd_panel_invert_color(panelHandle[e], ESP_LCD_INVERT ? true : false);
     esp_lcd_panel_swap_xy(panelHandle[e], ESP_LCD_SWAP_XY ? true : false);
     esp_lcd_panel_mirror(panelHandle[e], ESP_LCD_MIRROR_X ? true : false,
@@ -216,25 +218,25 @@ bool displayBegin(void) {
 
   panelW = TFT_W;
   panelH = TFT_H;
-#  if TFT_BACKLIGHT >= 0
+#if TFT_BACKLIGHT >= 0
   pinMode(TFT_BACKLIGHT, OUTPUT);
   digitalWrite(TFT_BACKLIGHT, HIGH);
-#  endif
+#endif
   DBG("esp_lcd up: %d panel(s), %dx%d at %ld Hz\n", NUM_EYES, panelW, panelH,
       (long)TFT_SPI_HZ);
   return true;
 }
 
-int displayMaxEyeSize(void) {
-  return (panelW < panelH) ? panelW : panelH;
-}
+int displayMaxEyeSize(void) { return (panelW < panelH) ? panelW : panelH; }
 
 void displaySetEyeSize(int size) {
   eyeSize = size;
   originX = (panelW - size) / 2;
   originY = (panelH - size) / 2;
-  if (originX < 0) originX = 0;
-  if (originY < 0) originY = 0;
+  if (originX < 0)
+    originX = 0;
+  if (originY < 0)
+    originY = 0;
 
   stripeW = 1;
   for (int w = ESP_LCD_STRIPE_COLS; w >= 1; w--) {
@@ -245,7 +247,8 @@ void displaySetEyeSize(int size) {
   }
   displayColumnStride = -stripeW;
 
-  if (scratch) heap_caps_free(scratch);
+  if (scratch)
+    heap_caps_free(scratch);
   // MALLOC_CAP_DMA: handed straight to a DMA channel.
   scratch = (uint16_t *)heap_caps_malloc((size_t)stripeW * size * 2 *
                                              sizeof(uint16_t),
@@ -262,13 +265,16 @@ void displaySetEyeSize(int size) {
 }
 
 static void fillPanel(int e, uint16_t color) {
-  if (!scratch) return;
+  if (!scratch)
+    return;
   const int w = stripeW;
   uint16_t *buf = scratch;
-  for (int i = 0; i < w * panelH; i++) buf[i] = color;
+  for (int i = 0; i < w * panelH; i++)
+    buf[i] = color;
   for (int x = 0; x < panelW; x += w) {
     int cols = (x + w <= panelW) ? w : (panelW - x);
-    if (cols != w) break; // Leave a ragged edge rather than corrupt memory
+    if (cols != w)
+      break; // Leave a ragged edge rather than corrupt memory
     drain(e, 0);
     esp_lcd_panel_draw_bitmap(panelHandle[e], x, 0, x + cols, panelH, buf);
     pending[e]++;
@@ -277,29 +283,31 @@ static void fillPanel(int e, uint16_t color) {
 }
 
 void displayClear(uint16_t color) {
-  for (int e = 0; e < NUM_EYES; e++) fillPanel(e, OUT16(color));
+  for (int e = 0; e < NUM_EYES; e++)
+    fillPanel(e, OUT16(color));
 }
 
 void displayFrameBegin(void) {}
-void displayEyeBegin(int eye) {
-  (void)eye;
-}
+void displayEyeBegin(int eye) { (void)eye; }
 
 uint16_t *displayColumn(int eye, int x) {
   (void)eye;
-  if (!scratch) return NULL;
+  if (!scratch)
+    return NULL;
   const int c = x % stripeW; // Column within the stripe
   uint16_t *base = &scratch[(size_t)scratchIdx * stripeW * eyeSize];
-  if (c == 0) stripeBase = x;
+  if (c == 0)
+    stripeBase = x;
   // Bottom row of this column; the renderer walks upward by one stripe width.
   return &base[(size_t)(eyeSize - 1) * stripeW + c];
 }
 
 void displayColumnDone(int eye, int x) {
-  if (!scratch) return;
-#  if PROFILE_FRAME
+  if (!scratch)
+    return;
+#if PROFILE_FRAME
   uint32_t t0 = micros();
-#  endif
+#endif
   // Only send once the stripe is full.
   if (((x % stripeW) == (stripeW - 1)) || (x == eyeSize - 1)) {
     esp_lcd_panel_draw_bitmap(panelHandle[eye], originX + stripeBase, originY,
@@ -309,14 +317,12 @@ void displayColumnDone(int eye, int x) {
     scratchIdx ^= 1;
     drain(eye, 1);
   }
-#  if PROFILE_FRAME
+#if PROFILE_FRAME
   displayBusyMicros += micros() - t0;
-#  endif
+#endif
 }
 
-void displayEyeEnd(int eye) {
-  drain(eye, 0);
-}
+void displayEyeEnd(int eye) { drain(eye, 0); }
 void displayFrameEnd(void) {}
 
 void displaySelfTest(void) {
@@ -329,7 +335,8 @@ void displaySelfTest(void) {
   }
   DBGLN("  if a panel stays dark, its CS/DC GPIO numbers are wrong");
   delay(2500);
-  for (int e = 0; e < NUM_EYES; e++) fillPanel(e, 0);
+  for (int e = 0; e < NUM_EYES; e++)
+    fillPanel(e, 0);
 }
 
 #endif // EYE_DISPLAY == EYE_DISPLAY_ESP_LCD
