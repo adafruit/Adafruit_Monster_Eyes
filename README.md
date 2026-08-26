@@ -1,6 +1,6 @@
-# Adafruit Monster Eyes [![Build Status](https://github.com/adafruit/Adafruit_Monster_Eyes/workflows/Arduino%20Library%20CI/badge.svg)](https://github.com/adafruit/Adafruit_Monster_Eyes/actions)[![Documentation](https://github.com/adafruit/ci-arduino/blob/master/assets/doxygen_badge.svg)](http://adafruit.github.io/Adafruit_Monster_Eyes/html/index.html)
+# Adafruit Monster Eyes [![Documentation](https://github.com/adafruit/ci-arduino/blob/master/assets/doxygen_badge.svg)](http://adafruit.github.io/Adafruit_Monster_Eyes/html/index.html)
 
-Arduino code to show moving, blinking eyes on various displays. Ported from the M4_Eyes for the MONSTER M4SK by Phil B. for Adafruit Industries
+Arduino code to show moving, blinking eyes on various displays. Ported from the [M4_Eyes for the MONSTER M4SK by Phil B. for Adafruit Industries](https://github.com/adafruit/Adafruit_Learning_System_Guides/tree/main/M4_Eyes)
 
 ## MCU and Display Support with Expected Performance
 
@@ -36,11 +36,11 @@ The repository has pre-built UF2 and .BIN files for common board/display combina
 If building on your own, edit the settings.h file to update pin, display and eye count defines.
 
 The default pin mapping is:
-SCK - SCK (default mapping in Arduino BSP)
-MISO - MISO (default mapping in Arduino BSP)
-DC - 9
-RST - 10
-CS (display 0) - 11
-CS (display 1) - 12
+* SCK - SCK (default mapping in Arduino BSP)
+* MISO - MISO (default mapping in Arduino BSP)
+* DC - 9
+* RST - 10
+* CS (display 0) - 11
+* CS (display 1) - 12
 
 These pins have compatibility across Metro and Feather form factor boards.
