@@ -179,16 +179,16 @@ static inline bool platformSafeModeRequested(void) {
 
 // ---- Adafruit QT Py RP2040 + EYESPI BFF ---------------------------------
 #elif defined(ARDUINO_ADAFRUIT_QTPY_RP2040)
-#define EYE_BOARD_NAME "QT Py RP2040 + EYESPI BFF"
+#define EYE_BOARD_NAME "QT Py RP2040 + EYESPI BFF" ///< Board profile name
 #ifndef EYE_PANEL_DEFAULT
-#define EYE_PANEL_DEFAULT EYE_PANEL_GC9A01A
+#define EYE_PANEL_DEFAULT EYE_PANEL_GC9A01A ///< Panel this board likely has
 #endif
-#define EYE_BOARD_DEFAULT_EYES 1
+#define EYE_BOARD_DEFAULT_EYES 1 ///< One chip select on the BFF
 #ifndef TFT_CS
-#define TFT_CS PIN_SERIAL2_TX
+#define TFT_CS PIN_SERIAL2_TX ///< GPIO 20, the pad marked TX
 #endif
 #ifndef TFT_DC
-#define TFT_DC PIN_SERIAL2_RX
+#define TFT_DC PIN_SERIAL2_RX ///< GPIO 5, the pad marked RX
 #endif
 #ifndef TFT_RST
 #define TFT_RST -1 ///< Not wired on the BFF
@@ -196,20 +196,21 @@ static inline bool platformSafeModeRequested(void) {
  
 // ---- Adafruit QT Py ESP32-S2 + EYESPI BFF -------------------------------
 #elif defined(ARDUINO_ADAFRUIT_QTPY_ESP32S2)
-#define EYE_BOARD_NAME "QT Py ESP32-S2 + EYESPI BFF"
+#define EYE_BOARD_NAME "QT Py ESP32-S2 + EYESPI BFF" ///< Board profile name
 #ifndef EYE_PANEL_DEFAULT
-#define EYE_PANEL_DEFAULT EYE_PANEL_GC9A01A
+#define EYE_PANEL_DEFAULT EYE_PANEL_GC9A01A ///< Panel this board likely has
 #endif
-#define EYE_BOARD_DEFAULT_EYES 1
+#define EYE_BOARD_DEFAULT_EYES 1 ///< One chip select on the BFF
 #ifndef TFT_CS
-#define TFT_CS TX
+#define TFT_CS TX ///< GPIO 5, the pad marked TX
 #endif
 #ifndef TFT_DC
-#define TFT_DC RX
+#define TFT_DC RX ///< GPIO 16, the pad marked RX
 #endif
 #ifndef TFT_RST
-#define TFT_RST -1
+#define TFT_RST -1 ///< Not wired on the BFF
 #endif
+
 
 // ---- Anything else ------------------------------------------------------
 #else
