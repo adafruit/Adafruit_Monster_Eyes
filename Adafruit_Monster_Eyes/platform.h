@@ -193,7 +193,7 @@ static inline bool platformSafeModeRequested(void) {
 #ifndef TFT_RST
 #define TFT_RST -1 ///< Not wired on the BFF
 #endif
- 
+
 // ---- Adafruit QT Py ESP32-S2 + EYESPI BFF -------------------------------
 #elif defined(ARDUINO_ADAFRUIT_QTPY_ESP32S2)
 #define EYE_BOARD_NAME "QT Py ESP32-S2 + EYESPI BFF" ///< Board profile name
