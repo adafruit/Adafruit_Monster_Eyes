@@ -4,31 +4,101 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+  release:
+    types: [published]
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      PUBLISH: ${{ github.event_name == 'release' ||
+        github.event_name == 'workflow_dispatch' }}
     strategy:
       fail-fast: false
       matrix:
         include:
           # ---- RP2040 / RP2350 ----------------------------------------------
-          # FS 0MB: assets live in the CircuitPython partition at 1 MB, so the
-          # core must not also claim a filesystem at the end of flash.
           - name: feather-rp2040-dvi
             fqbn: rp2040:rp2040:adafruit_feather_dvi:flash=8388608_0,usbstack=tinyusb
             core: rp2040
             defines: "-DEYE_PANEL=EYE_PANEL_DVI -DNUM_EYES=1"
 
-          - name: metro-rp2350-gc9a01a-2eye
-            fqbn: rp2040:rp2040:adafruit_metro_rp2350:flash=16777216_0,usbstack=tinyusb
+          - name: feather-rp2040-st7789-1eye
+            fqbn: rp2040:rp2040:adafruit_feather:flash=8388608_0,usbstack=tinyusb
+            core: rp2040
+            defines: "-DEYE_PANEL=EYE_PANEL_ST7789 -DNUM_EYES=1"
+
+          - name: feather-rp2040-st7789-1eye
+            fqbn: rp2040:rp2040:adafruit_feather:flash=8388608_0,usbstack=tinyusb
+            core: rp2040
+            defines: "-DEYE_PANEL=EYE_PANEL_ST7789 -DNUM_EYES=1"
+
+          - name: feather-rp2040-st7789-2eye
+            fqbn: rp2040:rp2040:adafruit_feather:flash=8388608_0,usbstack=tinyusb
+            core: rp2040
+            defines: "-DEYE_PANEL=EYE_PANEL_ST7789 -DNUM_EYES=2"
+
+          - name: feather-rp2040-gc9a01a-1eye
+            fqbn: rp2040:rp2040:adafruit_feather:flash=8388608_0,usbstack=tinyusb
+            core: rp2040
+            defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=1"
+
+          - name: feather-rp2040-gc9a01a-2eye
+            fqbn: rp2040:rp2040:adafruit_feather:flash=8388608_0,usbstack=tinyusb
             core: rp2040
             defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=2"
+
+          - name: feather-rp2350-gc9a01a-1eye
+            fqbn: rp2040:rp2040:adafruit_feather_rp2350_hstx:flash=8388608_0,usbstack=tinyusb
+            core: rp2040
+            defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=1"
+
+          - name: feather-rp2350-st7789-1eye
+            fqbn: rp2040:rp2040:adafruit_feather_rp2350_hstx:flash=8388608_0,usbstack=tinyusb
+            core: rp2040
+            defines: "-DEYE_PANEL=EYE_PANEL_ST7789 -DNUM_EYES=1"
+
+          - name: feather-rp2350-gc9a01a-2eye
+            fqbn: rp2040:rp2040:adafruit_feather_rp2350_hstx:flash=8388608_0,usbstack=tinyusb
+            core: rp2040
+            defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=2"
+
+          - name: feather-rp2350-st7789-2eye
+            fqbn: rp2040:rp2040:adafruit_feather_rp2350_hstx:flash=8388608_0,usbstack=tinyusb
+            core: rp2040
+            defines: "-DEYE_PANEL=EYE_PANEL_ST7789 -DNUM_EYES=2"
+
+          - name: qtpy-rp2040-gc9a01a-1eye
+            fqbn: rp2040:rp2040:adafruit_qtpy:flash=8388608_0,usbstack=tinyusb
+            core: rp2040
+            defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=1"
+          # ---- ESP32-S2/S3 ----------------------------------------------
+          - name: metro-esp32s3-st7789-1eye
+            fqbn: esp32:esp32:adafruit_metro_esp32s3:PartitionScheme=tinyuf2,USBMode=default
+            core: esp32
+            defines: "-DEYE_PANEL=EYE_PANEL_ST7789 -DNUM_EYES=1"
+
+          - name: metro-esp32s3-gc9a01a-1eye
+            fqbn: esp32:esp32:adafruit_metro_esp32s3:PartitionScheme=tinyuf2,USBMode=default
+            core: esp32
+            defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=1"
 
           - name: metro-esp32s3-st7789-2eye
             fqbn: esp32:esp32:adafruit_metro_esp32s3:PartitionScheme=tinyuf2,USBMode=default
             core: esp32
             defines: "-DEYE_PANEL=EYE_PANEL_ST7789 -DNUM_EYES=2"
+
+          - name: metro-esp32s3-gc9a01a-2eye
+            fqbn: esp32:esp32:adafruit_metro_esp32s3:PartitionScheme=tinyuf2,USBMode=default
+            core: esp32
+            defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=2"
+
+          - name: qtpy-esp32s2-gc9a01a-1eye
+            fqbn: esp32:esp32:adafruit_qtpy_esp32s2:PartitionScheme=tinyuf2
+            core: esp32
+            defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=1"
 
     name: ${{ matrix.name }}
     steps:
@@ -89,13 +159,36 @@ jobs:
             --warnings default \
             "${{ steps.sketch.outputs.dir }}"
 
+      - name: Collect the binary
+        if: env.PUBLISH == 'true'
+        run: |
+          SRC="build/${{ matrix.name }}"
+          BASE="Adafruit_Monster_Eyes-${{ matrix.name }}"
+          mkdir -p dist
+          if ls "$SRC"/*.uf2 >/dev/null 2>&1; then
+            cp "$SRC"/*.uf2 "dist/$BASE.uf2"                 # RP2040 / RP2350
+          elif ls "$SRC"/*.merged.bin >/dev/null 2>&1; then
+            cp "$SRC"/*.merged.bin "dist/$BASE.bin"          # ESP32, flash at 0x0
+          elif ls "$SRC"/*.ino.bin >/dev/null 2>&1; then
+            cp "$SRC"/*.ino.bin "dist/$BASE.bin"             # ESP32 fallback
+          else
+            echo "No .uf2 or .bin produced in $SRC" >&2
+            ls -la "$SRC" >&2
+            exit 1
+          fi
+          ls -l dist
+
       - uses: actions/upload-artifact@v4
+        if: env.PUBLISH == 'true'
         with:
           name: ${{ matrix.name }}
-          path: |
-            build/${{ matrix.name }}/*.uf2
-            build/${{ matrix.name }}/*.bin
+          path: dist/*
           if-no-files-found: error
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
 
   docs:
     runs-on: ubuntu-latest
