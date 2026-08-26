@@ -211,7 +211,6 @@ static inline bool platformSafeModeRequested(void) {
 #define TFT_RST -1 ///< Not wired on the BFF
 #endif
 
-
 // ---- Anything else ------------------------------------------------------
 #else
 /** Board profile that matched, for the startup banner */
