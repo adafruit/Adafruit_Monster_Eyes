@@ -177,36 +177,38 @@ static inline bool platformSafeModeRequested(void) {
 #endif
 #define EYE_BOARD_DEFAULT_EYES 2 ///< Eye count that suits this board
 
-// ---- RP2040 QT Py + EYESPI BFF ------------------------------------------
-#elif defined(ARDUINO_ADAFRUIT_QTPY_RP2040) ||                                 \
-    defined(ARDUINO_ADAFRUIT_QTPY_ESP32S2)
-/** Board profile that matched, for the startup banner */
-#define EYE_BOARD_NAME "QT Py + EYESPI BFF"
+// ---- Adafruit QT Py RP2040 + EYESPI BFF ---------------------------------
+#elif defined(ARDUINO_ADAFRUIT_QTPY_RP2040)
+#define EYE_BOARD_NAME "QT Py RP2040 + EYESPI BFF"
 #ifndef EYE_PANEL_DEFAULT
-/** Panel this board most likely has */
 #define EYE_PANEL_DEFAULT EYE_PANEL_GC9A01A
 #endif
-#define EYE_BOARD_DEFAULT_EYES 1 ///< Eye count that suits this board
+#define EYE_BOARD_DEFAULT_EYES 1
 #ifndef TFT_CS
-#if defined(TX)
-#define TFT_CS TX ///< Chip select for panel 0
-#elif defined(PIN_SERIAL1_TX)
-#define TFT_CS PIN_SERIAL1_TX ///< Chip select for panel 0
-#else
-#error "QT Py profile: cannot resolve the TX pad; set TFT_CS in settings.h"
-#endif
+#define TFT_CS PIN_SERIAL2_TX
 #endif
 #ifndef TFT_DC
-#if defined(RX)
-#define TFT_DC RX ///< Data/command pin, shared by both panels
-#elif defined(PIN_SERIAL1_RX)
-#define TFT_DC PIN_SERIAL1_RX ///< Data/command pin, shared by both panels
-#else
-#error "QT Py profile: cannot resolve the RX pad; set TFT_DC in settings.h"
-#endif
+#define TFT_DC PIN_SERIAL2_RX
 #endif
 #ifndef TFT_RST
-#define TFT_RST -1 ///< Panel reset pin, shared; -1 if tied to board reset
+#define TFT_RST -1 ///< Not wired on the BFF
+#endif
+ 
+// ---- Adafruit QT Py ESP32-S2 + EYESPI BFF -------------------------------
+#elif defined(ARDUINO_ADAFRUIT_QTPY_ESP32S2)
+#define EYE_BOARD_NAME "QT Py ESP32-S2 + EYESPI BFF"
+#ifndef EYE_PANEL_DEFAULT
+#define EYE_PANEL_DEFAULT EYE_PANEL_GC9A01A
+#endif
+#define EYE_BOARD_DEFAULT_EYES 1
+#ifndef TFT_CS
+#define TFT_CS TX
+#endif
+#ifndef TFT_DC
+#define TFT_DC RX
+#endif
+#ifndef TFT_RST
+#define TFT_RST -1
 #endif
 
 // ---- Anything else ------------------------------------------------------
