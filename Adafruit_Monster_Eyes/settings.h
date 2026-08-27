@@ -182,6 +182,58 @@
 #endif
 
 // =========================================================================
+//  4b. TWO-BOARD SYNC - PICODVI
+// =========================================================================
+//
+// Run one eye per board and keep them in step over a serial link.
+//
+// WIRING: primary TX -> secondary RX, and GND to GND.
+//
+// SETUP: build both boards with NUM_EYES 1 and give them the same config and
+// assets. The primary draws the right eye and the secondary the left, each
+// reading its own block from config.eye -- see EYE_SYNC_SIDE_RIGHT below to
+// swap them.
+//
+// WHAT IS SENT: gaze target, pupil dilation, blink phase, and the primary's
+// clock so iris rotation stays in step. Everything else stays local.
+//
+// If packets stop arriving for EYE_SYNC_TIMEOUT_MS the secondary resumes
+// animating on its own rather than freezing.
+#define EYE_SYNC_OFF 0       ///< Standalone; no serial link
+#define EYE_SYNC_PRIMARY 1   ///< Animates, and broadcasts state
+#define EYE_SYNC_SECONDARY 2 ///< Renders the state it is sent
+
+#ifndef EYE_SYNC
+#define EYE_SYNC EYE_SYNC_OFF ///< Two-board sync role
+#endif
+#ifndef EYE_SYNC_SERIAL
+#define EYE_SYNC_SERIAL Serial1 ///< UART carrying the link
+#endif
+#ifndef EYE_SYNC_BAUD
+#define EYE_SYNC_BAUD 115200 ///< Link speed; a packet is 13 bytes
+#endif
+// The UART pins. Serial1 defaults to GPIO 0/1 on RP2.
+// Set them if you need the link somewhere else
+#ifndef EYE_SYNC_TX_PIN
+#define EYE_SYNC_TX_PIN 0 ///< Sync UART transmit pin (primary drives this)
+#endif
+#ifndef EYE_SYNC_RX_PIN
+#define EYE_SYNC_RX_PIN 1 ///< Sync UART receive pin (secondary listens here)
+#endif
+
+#ifndef EYE_SYNC_SIDE_RIGHT
+#if EYE_SYNC == EYE_SYNC_PRIMARY
+#define EYE_SYNC_SIDE_RIGHT 1 ///< Primary draws the right eye
+#else
+#define EYE_SYNC_SIDE_RIGHT 0 ///< Secondary draws the left eye
+#endif
+#endif
+
+#ifndef EYE_SYNC_TIMEOUT_MS
+#define EYE_SYNC_TIMEOUT_MS 500 ///< Silence before the secondary free-runs
+#endif
+
+// =========================================================================
 //  5. MEMORY
 // =========================================================================
 
@@ -231,8 +283,13 @@
 #endif
 // Which per-eye block a single-eye build reads from a two-eye .eye file.
 #ifndef EYE_SIDE
-/** Which per-eye block a single-eye build reads, "left" or "right" */
-#define EYE_SIDE "left"
+#if EYE_SYNC != EYE_SYNC_OFF
+// Follows EYE_SYNC_SIDE_RIGHT, so a synced pair cannot end up with both
+// boards reading the same block.
+#define EYE_SIDE (EYE_SYNC_SIDE_RIGHT ? "right" : "left")
+#else
+#define EYE_SIDE "left" ///< Block a single-eye build reads from config.eye
+#endif
 #endif
 
 // 0 means "fill the display". The three radii scale with it when left at

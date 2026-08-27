@@ -297,6 +297,22 @@ void eyeSettingsDefaults(void) {
 // Seed each eye's variant from the shared settings. With two eyes, eye 0
 // (the character's right, appearing on the viewer's left) is the mirror of
 // eye 1: opposite iris rotation, opposite start angle, unmirrored eyelids.
+/**
+ * @brief Turn a variant into the character's RIGHT eye (eye 0).
+ *
+ * The right eye is the left one mirrored: eyelid handedness flips, the iris
+ * spins the other way, and its start angle is half a turn round so the two
+ * irises do not rotate in lockstep.
+ *
+ * @param v Variant to transform in place.
+ */
+static void applyRightEyeOrientation(EyeVariant &v) {
+  v.irisSpin = -v.irisSpin;
+  v.scleraSpin = -v.scleraSpin;
+  v.irisStartAngle = (uint16_t)((v.irisStartAngle + 512) & 1023);
+  v.eyelidMirror = !v.eyelidMirror;
+}
+
 static void seedVariants(void) {
   for (int e = 0; e < NUM_EYES; e++) {
     EyeVariant &v = eyeVariant[e];
@@ -308,12 +324,11 @@ static void seedVariants(void) {
     v.scleraMirror = settings.scleraMirror;
     v.eyelidMirror = settings.eyelidMirror;
 #if NUM_EYES > 1
-    if (e == 0) {
-      v.irisSpin = -v.irisSpin;
-      v.scleraSpin = -v.scleraSpin;
-      v.irisStartAngle = (uint16_t)((v.irisStartAngle + 512) & 1023);
-      v.eyelidMirror = !v.eyelidMirror;
-    }
+    if (e == 0)
+      applyRightEyeOrientation(v);
+#else
+    if (EYE_SIDE[0] == 'r')
+      applyRightEyeOrientation(v);
 #endif
   }
 }
