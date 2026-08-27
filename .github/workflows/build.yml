@@ -21,81 +21,87 @@ jobs:
         include:
           # ---- RP2040 / RP2350 ----------------------------------------------
           - name: feather-rp2040-dvi
+            bundle: feather_rp2040_dvi
             fqbn: rp2040:rp2040:adafruit_feather_dvi:flash=8388608_0,usbstack=tinyusb
             core: rp2040
             defines: "-DEYE_PANEL=EYE_PANEL_DVI -DNUM_EYES=1"
 
           - name: feather-rp2040-st7789-1eye
-            fqbn: rp2040:rp2040:adafruit_feather:flash=8388608_0,usbstack=tinyusb
-            core: rp2040
-            defines: "-DEYE_PANEL=EYE_PANEL_ST7789 -DNUM_EYES=1"
-
-          - name: feather-rp2040-st7789-1eye
+            bundle: feather_rp2040
             fqbn: rp2040:rp2040:adafruit_feather:flash=8388608_0,usbstack=tinyusb
             core: rp2040
             defines: "-DEYE_PANEL=EYE_PANEL_ST7789 -DNUM_EYES=1"
 
           - name: feather-rp2040-st7789-2eye
+            bundle: feather_rp2040
             fqbn: rp2040:rp2040:adafruit_feather:flash=8388608_0,usbstack=tinyusb
             core: rp2040
             defines: "-DEYE_PANEL=EYE_PANEL_ST7789 -DNUM_EYES=2"
 
-          - name: feather-rp2040-gc9a01a-1eye
-            fqbn: rp2040:rp2040:adafruit_feather:flash=8388608_0,usbstack=tinyusb
-            core: rp2040
-            defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=1"
-
           - name: feather-rp2040-gc9a01a-2eye
+            bundle: feather_rp2040
             fqbn: rp2040:rp2040:adafruit_feather:flash=8388608_0,usbstack=tinyusb
             core: rp2040
             defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=2"
-
-          - name: feather-rp2350-gc9a01a-1eye
-            fqbn: rp2040:rp2040:adafruit_feather_rp2350_hstx:flash=8388608_0,usbstack=tinyusb
-            core: rp2040
-            defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=1"
-
-          - name: feather-rp2350-st7789-1eye
-            fqbn: rp2040:rp2040:adafruit_feather_rp2350_hstx:flash=8388608_0,usbstack=tinyusb
-            core: rp2040
-            defines: "-DEYE_PANEL=EYE_PANEL_ST7789 -DNUM_EYES=1"
 
           - name: feather-rp2350-gc9a01a-2eye
+            bundle: feather_rp2350
             fqbn: rp2040:rp2040:adafruit_feather_rp2350_hstx:flash=8388608_0,usbstack=tinyusb
             core: rp2040
             defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=2"
 
-          - name: feather-rp2350-st7789-2eye
-            fqbn: rp2040:rp2040:adafruit_feather_rp2350_hstx:flash=8388608_0,usbstack=tinyusb
+          - name: metro-rp2350-gc9a01a-2eye
+            bundle: metro_rp2350
+            fqbn: rp2040:rp2040:adafruit_metro_rp2350:flash=16777216_0,usbstack=tinyusb
+            core: rp2040
+            defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=2"
+
+          - name: metro-rp2350-st7789-2eye
+            bundle: metro_rp2350
+            fqbn: rp2040:rp2040:adafruit_metro_rp2350:flash=16777216_0,usbstack=tinyusb
             core: rp2040
             defines: "-DEYE_PANEL=EYE_PANEL_ST7789 -DNUM_EYES=2"
 
           - name: qtpy-rp2040-gc9a01a-1eye
+            bundle: qtpy_rp2040
             fqbn: rp2040:rp2040:adafruit_qtpy:flash=8388608_0,usbstack=tinyusb
             core: rp2040
             defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=1"
-          # ---- ESP32-S2/S3 ----------------------------------------------
-          - name: metro-esp32s3-st7789-1eye
-            fqbn: esp32:esp32:adafruit_metro_esp32s3:PartitionScheme=tinyuf2,USBMode=default
-            core: esp32
-            defines: "-DEYE_PANEL=EYE_PANEL_ST7789 -DNUM_EYES=1"
 
-          - name: metro-esp32s3-gc9a01a-1eye
-            fqbn: esp32:esp32:adafruit_metro_esp32s3:PartitionScheme=tinyuf2,USBMode=default
-            core: esp32
-            defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=1"
+          # ---- Dual PicoDVI, synced over a UART ------------------
+          - name: dual-dvi-feather-primary
+            bundle: dual_picodvi
+            asset: primary
+            fqbn: rp2040:rp2040:adafruit_feather_dvi:flash=8388608_0,usbstack=tinyusb
+            core: rp2040
+            defines: >-
+              -DEYE_PANEL=EYE_PANEL_DVI -DNUM_EYES=1
+              -DEYE_SYNC=EYE_SYNC_PRIMARY
 
+          - name: dual-dvi-feather-secondary
+            bundle: dual_picodvi
+            asset: secondary
+            fqbn: rp2040:rp2040:adafruit_feather_dvi:flash=8388608_0,usbstack=tinyusb
+            core: rp2040
+            defines: >-
+              -DEYE_PANEL=EYE_PANEL_DVI -DNUM_EYES=1
+              -DEYE_SYNC=EYE_SYNC_SECONDARY
+
+          # ---- ESP32 --------------------------------------------------------
           - name: metro-esp32s3-st7789-2eye
+            bundle: metro_esp32s3
             fqbn: esp32:esp32:adafruit_metro_esp32s3:PartitionScheme=tinyuf2,USBMode=default
             core: esp32
             defines: "-DEYE_PANEL=EYE_PANEL_ST7789 -DNUM_EYES=2"
 
           - name: metro-esp32s3-gc9a01a-2eye
+            bundle: metro_esp32s3
             fqbn: esp32:esp32:adafruit_metro_esp32s3:PartitionScheme=tinyuf2,USBMode=default
             core: esp32
             defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=2"
 
           - name: qtpy-esp32s2-gc9a01a-1eye
+            bundle: qtpy_esp32s2
             fqbn: esp32:esp32:adafruit_qtpy_esp32s2:PartitionScheme=tinyuf2
             core: esp32
             defines: "-DEYE_PANEL=EYE_PANEL_GC9A01A -DNUM_EYES=1"
@@ -163,7 +169,7 @@ jobs:
         if: env.PUBLISH == 'true'
         run: |
           SRC="build/${{ matrix.name }}"
-          BASE="Adafruit_Monster_Eyes-${{ matrix.name }}"
+          BASE="${{ matrix.asset || matrix.name }}"
           mkdir -p dist
           if ls "$SRC"/*.uf2 >/dev/null 2>&1; then
             cp "$SRC"/*.uf2 "dist/$BASE.uf2"                 # RP2040 / RP2350
@@ -181,14 +187,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: env.PUBLISH == 'true'
         with:
-          name: ${{ matrix.name }}
+          name: ${{ matrix.bundle }}__${{ matrix.name }}
           path: dist/*
           if-no-files-found: error
-      - name: Attach to the release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*
 
   docs:
     runs-on: ubuntu-latest
@@ -210,3 +211,52 @@ jobs:
           GH_REPO_TOKEN: ${{ secrets.GH_REPO_TOKEN }}
           PRETTYNAME: "Adafruit Monster Eyes"
         run: bash ci/doxy_gen_and_deploy.sh Adafruit_Monster_Eyes
+
+  # Builds are grouped into one zip per board, so a release lists a handful of
+  # named archives
+  bundle:
+    needs: build
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: incoming
+
+      - name: Group by board and zip
+        run: |
+          set -e
+          # Each artifact arrives as incoming/<bundle>__<name>/<file>.
+          for d in incoming/*/; do
+            a=$(basename "$d")
+            case "$a" in
+              *__*) grp="${a%%__*}" ;;
+              *) echo "Skipping unexpected artifact $a" >&2; continue ;;
+            esac
+            mkdir -p "stage/$grp"
+            cp "$d"* "stage/$grp/"
+          done
+          mkdir -p out
+          for g in stage/*/; do
+            g=$(basename "$g")
+            (cd stage && zip -r "../out/$g.zip" "$g")
+          done
+          echo "== assembled =="
+          for z in out/*.zip; do
+            echo "--- $z"
+            unzip -l "$z" | sed -n '4,30p'
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: out/*.zip
+          if-no-files-found: error
+
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/*.zip

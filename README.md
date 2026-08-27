@@ -2,6 +2,9 @@
 
 Arduino code to show moving, blinking eyes on various displays. Ported from the [M4_Eyes for the MONSTER M4SK by Phil B. for Adafruit Industries](https://github.com/adafruit/Adafruit_Learning_System_Guides/tree/main/M4_Eyes)
 
+Just like with M4 Eyes, you'll load CircuitPython onto your board. Then, drag and drop your chosen [EYES artwork](https://github.com/adafruit/Adafruit_Learning_System_Guides/tree/main/M4_Eyes/eyes) to the CIRCUITPY drive.
+Then, load the Monster Eyes firmware, either by compiling or via UF2, onto your board. You should see the eyes blink to life.
+
 ## MCU and Display Support with Expected Performance
 
 The following microcontrollerss have been tested:
