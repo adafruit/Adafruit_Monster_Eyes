@@ -115,6 +115,32 @@ void setup() {
   }
   DBG("Display ready, max eye %d. Free heap: %u\n", displayMaxEyeSize(),
       platformFreeHeap());
+
+#if EYE_SYNC != EYE_SYNC_OFF
+  // Opened AFTER the display. PicoDVI overclocks the chip when
+  // it starts, and a UART fixes its baud divisor from the peripheral clock at
+  // begin() time
+#if defined(ARDUINO_ARCH_RP2040)
+  EYE_SYNC_SERIAL.setTX(EYE_SYNC_TX_PIN);
+  EYE_SYNC_SERIAL.setRX(EYE_SYNC_RX_PIN);
+  EYE_SYNC_SERIAL.begin(EYE_SYNC_BAUD);
+#elif defined(ARDUINO_ARCH_ESP32)
+  EYE_SYNC_SERIAL.begin(EYE_SYNC_BAUD, SERIAL_8N1, EYE_SYNC_RX_PIN,
+                        EYE_SYNC_TX_PIN);
+#else
+  EYE_SYNC_SERIAL.begin(EYE_SYNC_BAUD);
+#endif
+  // Both boards must report the same clock
+  DBG("sync: %s GPIO%d, %ld baud, clk %lu Hz\n",
+#if EYE_SYNC == EYE_SYNC_PRIMARY
+      "PRIMARY sending on", EYE_SYNC_TX_PIN,
+#else
+      "SECONDARY listening on", EYE_SYNC_RX_PIN,
+#endif
+      (long)EYE_SYNC_BAUD, (unsigned long)platformCpuHz());
+  DBG("sync: drawing the %s eye\n", EYE_SYNC_SIDE_RIGHT ? "RIGHT" : "LEFT");
+#endif
+
 #if DISPLAY_SELFTEST
   displaySelfTest();
 #endif
@@ -265,6 +291,119 @@ static void gazeRadiusInit(void) {
       map2screen((int)gazeRadius));
 }
 
+#if EYE_SYNC != EYE_SYNC_OFF
+/**
+ * @brief State the two boards must agree on, sent once per frame.
+ *
+ * Deliberately small: gaze, pupil, blink phase and the primary's clock. Iris
+ * rotation is derived from time rather than sent, so carrying the clock keeps
+ * both eyes spinning in step while leaving each board its own spin direction
+ * and start angle.
+ */
+struct __attribute__((packed)) EyeSyncPacket {
+  uint8_t magic; ///< Frame marker, 0xA5
+  int16_t eyeX;  ///< Gaze target in map pixels
+  int16_t eyeY;  ///< Gaze target in map pixels
+  uint16_t iris; ///< Pupil dilation, 0-65535 across the configured range
+  uint8_t blink; ///< Blink phase, 0 open to 255 shut
+  uint32_t ms;   ///< Primary's millis(), so iris rotation stays in step
+  uint8_t sum;   ///< XOR of every preceding byte
+};
+
+#define EYE_SYNC_MAGIC 0xA5 ///< First byte of a sync packet
+
+/** @brief XOR checksum over a packet's leading bytes. */
+static uint8_t syncChecksum(const uint8_t *p) {
+  uint8_t x = 0;
+  for (size_t i = 0; i < sizeof(EyeSyncPacket) - 1; i++)
+    x ^= p[i];
+  return x;
+}
+
+static uint32_t syncSent = 0;        ///< Packets transmitted this second
+static uint32_t syncGood = 0;        ///< Valid packets received this second
+static uint32_t syncBad = 0;         ///< Packets dropped on a bad checksum
+static uint32_t syncBytes = 0;       ///< Raw bytes seen on the link this second
+static int32_t syncClockOffset = 0;  ///< Primary millis() minus ours
+static float syncBlinkFactor = 0.0f; ///< Blink phase from the link
+static bool syncLive = false;        ///< Are packets currently arriving?
+#endif
+
+/**
+ * @brief Milliseconds on the primary's clock.
+ *
+ * Iris and sclera rotation are computed from absolute time, so a secondary
+ * that used its own uptime would sit at a fixed phase offset. Standalone
+ * builds pay nothing -- the offset is zero and folds away.
+ */
+static uint32_t eyeMillis(void) {
+#if EYE_SYNC == EYE_SYNC_SECONDARY
+  return (uint32_t)((int32_t)millis() + syncClockOffset);
+#else
+  return millis();
+#endif
+}
+
+#if EYE_SYNC == EYE_SYNC_PRIMARY
+/** @brief Broadcast this frame's shared state. */
+static void syncSend(void) {
+  EyeSyncPacket p;
+  p.magic = EYE_SYNC_MAGIC;
+  p.eyeX = (int16_t)lroundf(frameEyeX);
+  p.eyeY = (int16_t)lroundf(frameEyeY);
+  p.iris = (uint16_t)(constrain(irisValue, 0.0f, 1.0f) * 65535.0f);
+  p.blink = (uint8_t)(constrain(eye[0].blinkFactor, 0.0f, 1.0f) * 255.0f);
+  p.ms = millis();
+  p.sum = syncChecksum((const uint8_t *)&p);
+  EYE_SYNC_SERIAL.write((const uint8_t *)&p, sizeof(p));
+  syncSent++;
+}
+#endif
+
+#if EYE_SYNC == EYE_SYNC_SECONDARY
+/**
+ * @brief Consume any waiting packets, keeping only the most recent.
+ *
+ * Reading everything available rather than one packet per frame means a
+ * secondary rendering slower than the primary tracks the latest state instead
+ * of falling progressively further behind.
+ *
+ * @return true if a good packet arrived recently enough to trust.
+ */
+static bool syncReceive(void) {
+  static uint8_t buf[sizeof(EyeSyncPacket)];
+  static uint8_t have = 0;
+  static uint32_t lastGood = 0;
+
+  while (EYE_SYNC_SERIAL.available()) {
+    uint8_t b = (uint8_t)EYE_SYNC_SERIAL.read();
+    syncBytes++;
+    // Resynchronise on the magic byte, so a mid-packet start recovers.
+    if (have == 0 && b != EYE_SYNC_MAGIC)
+      continue;
+    buf[have++] = b;
+    if (have < sizeof(buf))
+      continue;
+    have = 0;
+
+    EyeSyncPacket p;
+    memcpy(&p, buf, sizeof(p));
+    if (p.sum != syncChecksum(buf)) {
+      syncBad++;
+      continue; // Corrupt; wait for the next
+    }
+    syncGood++;
+    frameEyeX = (float)p.eyeX;
+    frameEyeY = (float)p.eyeY;
+    irisValue = (float)p.iris / 65535.0f;
+    syncBlinkFactor = (float)p.blink / 255.0f;
+    syncClockOffset = (int32_t)p.ms - (int32_t)millis();
+    lastGood = millis();
+  }
+  return (lastGood != 0) && ((millis() - lastGood) < EYE_SYNC_TIMEOUT_MS);
+}
+#endif
+
 static void updateGaze(uint32_t t) {
   int32_t dt = t - eyeMoveStartTime;
 
@@ -370,6 +509,10 @@ static void updateEye(uint8_t e, uint32_t t) {
 
 #if NUM_EYES > 1
   E.eyeX = frameEyeX + ((e & 1) ? EYE_FIXATE : -EYE_FIXATE);
+#elif EYE_SYNC != EYE_SYNC_OFF
+  // Toe in the way this board's eye would in a two-eye build: eye 0 (right)
+  // leans one way, eye 1 (left) the other.
+  E.eyeX = frameEyeX + (EYE_SYNC_SIDE_RIGHT ? -EYE_FIXATE : EYE_FIXATE);
 #else
   E.eyeX = frameEyeX;
 #endif
@@ -401,6 +544,13 @@ static void updateEye(uint8_t e, uint32_t t) {
   E.upperLidFactor = (E.upperLidFactor * 0.6f) + (uq * 0.4f);
   E.lowerLidFactor = (E.lowerLidFactor * 0.6f) + (lq * 0.4f);
 
+#if EYE_SYNC == EYE_SYNC_SECONDARY
+  if (syncLive) {
+    // Take the phase from the link. The local state machine below still runs,
+    // so if the link drops mid-blink the eye carries on from where it is.
+    E.blinkFactor = syncBlinkFactor;
+  }
+#endif
   if (E.blinkState) {
     if ((t - E.blinkStartTime) >= E.blinkDuration) {
       if (++E.blinkState > DEBLINK) {
@@ -412,9 +562,14 @@ static void updateEye(uint8_t e, uint32_t t) {
         E.blinkFactor = 1.0f;
       }
     } else {
-      E.blinkFactor = (float)(t - E.blinkStartTime) / (float)E.blinkDuration;
-      if (E.blinkState == DEBLINK)
-        E.blinkFactor = 1.0f - E.blinkFactor;
+#if EYE_SYNC == EYE_SYNC_SECONDARY
+      if (!syncLive)
+#endif
+      {
+        E.blinkFactor = (float)(t - E.blinkStartTime) / (float)E.blinkDuration;
+        if (E.blinkState == DEBLINK)
+          E.blinkFactor = 1.0f - E.blinkFactor;
+      }
     }
   }
 
@@ -422,7 +577,7 @@ static void updateEye(uint8_t e, uint32_t t) {
   // negative, a direct float->unsigned conversion is undefined behavior, and
   // ARM's __aeabi_f2uiz saturates it to 0 -- which pins the iris angle at zero
   // and the iris stops spinning. Going via a signed int wraps correctly.
-  float mins = (float)millis() / 60000.0f;
+  float mins = (float)eyeMillis() / 60000.0f;
   E.irisAngle =
       (uint16_t)(int32_t)((float)E.irisStartAngle + E.irisSpin * mins + 0.5f);
   E.scleraAngle = (uint16_t)(int32_t)((float)E.scleraStartAngle +
@@ -595,9 +750,20 @@ static void EYE_HOT_FN(renderEye)(uint8_t e) {
 void loop() {
   uint32_t t = micros();
 
+#if EYE_SYNC == EYE_SYNC_SECONDARY
+  // Animate locally only while the link is quiet, so a pulled cable leaves a
+  // working eye rather than a frozen one.
+  syncLive = syncReceive();
+  if (!syncLive) {
+    updateGaze(t);
+    updateBlinks(t);
+    updateIris();
+  }
+#else
   updateGaze(t);
   updateBlinks(t);
   updateIris();
+#endif
 
   displayFrameBegin();
   for (uint8_t e = 0; e < NUM_EYES; e++) {
@@ -607,6 +773,10 @@ void loop() {
     displayEyeEnd(e);
   }
   displayFrameEnd();
+
+#if EYE_SYNC == EYE_SYNC_PRIMARY
+  syncSend();
+#endif
 
   frames++;
 #if PROFILE_FRAME
@@ -624,6 +794,28 @@ void loop() {
     accFrameMicros = accBusyMicros = 0;
 #else
     Serial.printf("%lu fps\n", frames);
+#endif
+#if EYE_SYNC == EYE_SYNC_PRIMARY
+    DBG("  sync: sent %lu packets\n", (unsigned long)syncSent);
+    syncSent = 0;
+#elif EYE_SYNC == EYE_SYNC_SECONDARY
+    DBG("  sync: %s, %lu good, %lu bad, %lu bytes\n",
+        syncLive ? "LOCKED" : "free-running", (unsigned long)syncGood,
+        (unsigned long)syncBad, (unsigned long)syncBytes);
+    // Only comment when something is actually wrong. LOCKED with good packets
+    // needs no advice.
+    if (!syncLive) {
+      if (syncBytes == 0) {
+        DBGLN("        no bytes -- check TX->RX and a COMMON GROUND");
+      } else if (syncGood == 0) {
+        DBGLN("        bytes but no valid packets -- check EYE_SYNC_BAUD and"
+              " that both boards report the same clk");
+      }
+    } else if (syncBad > syncGood / 8) {
+      DBGLN("        many corrupt packets -- shorten the wire or drop the"
+            " baud rate");
+    }
+    syncGood = syncBad = syncBytes = 0;
 #endif
     frames = 0;
     lastFrameReport = t;
