@@ -185,9 +185,9 @@
 //  4b. TWO-BOARD SYNC - PICODVI
 // =========================================================================
 //
-// Run one eye per board and keep them in step over a serial link.
+// Run one eye per board and keep them in step over a STEMMA QT cable
 //
-// WIRING: primary TX -> secondary RX, and GND to GND.
+// WIRING: one STEMMA QT cable between the two boards.
 //
 // SETUP: build both boards with NUM_EYES 1 and give them the same config and
 // assets. The primary draws the right eye and the secondary the left, each
@@ -206,19 +206,18 @@
 #ifndef EYE_SYNC
 #define EYE_SYNC EYE_SYNC_OFF ///< Two-board sync role
 #endif
-#ifndef EYE_SYNC_SERIAL
-#define EYE_SYNC_SERIAL Serial1 ///< UART carrying the link
+// The STEMMA QT cable uses the default Wire pins:
+// (Pico GPIO 4/5, Feather RP2040 DVI GPIO 2/3)
+// The primary is the I2C controller and writes packets to the secondary's address.
+//
+#ifndef EYE_SYNC_I2C_ADDR
+#define EYE_SYNC_I2C_ADDR 0x42 ///< Address the secondary answers to
 #endif
-#ifndef EYE_SYNC_BAUD
-#define EYE_SYNC_BAUD 115200 ///< Link speed; a packet is 13 bytes
+#ifndef EYE_SYNC_I2C_WIRE
+#define EYE_SYNC_I2C_WIRE Wire ///< Wire instance on the STEMMA QT port
 #endif
-// The UART pins. Serial1 defaults to GPIO 0/1 on RP2.
-// Set them if you need the link somewhere else
-#ifndef EYE_SYNC_TX_PIN
-#define EYE_SYNC_TX_PIN 0 ///< Sync UART transmit pin (primary drives this)
-#endif
-#ifndef EYE_SYNC_RX_PIN
-#define EYE_SYNC_RX_PIN 1 ///< Sync UART receive pin (secondary listens here)
+#ifndef EYE_SYNC_I2C_HZ
+#define EYE_SYNC_I2C_HZ 400000 ///< Bus speed; a packet is 13 bytes
 #endif
 
 #ifndef EYE_SYNC_SIDE_RIGHT

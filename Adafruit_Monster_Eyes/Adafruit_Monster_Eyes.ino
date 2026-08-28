@@ -10,6 +10,14 @@
  */
 
 #include "eye.h"
+
+#if EYE_SYNC != EYE_SYNC_OFF
+#include <Wire.h>
+#if EYE_SYNC == EYE_SYNC_SECONDARY
+static void syncOnReceive(int n);
+#endif
+#endif
+
 #include <math.h>
 
 static int SIZE, HALF;
@@ -117,27 +125,20 @@ void setup() {
       platformFreeHeap());
 
 #if EYE_SYNC != EYE_SYNC_OFF
-  // Opened AFTER the display. PicoDVI overclocks the chip when
-  // it starts, and a UART fixes its baud divisor from the peripheral clock at
-  // begin() time
-#if defined(ARDUINO_ARCH_RP2040)
-  EYE_SYNC_SERIAL.setTX(EYE_SYNC_TX_PIN);
-  EYE_SYNC_SERIAL.setRX(EYE_SYNC_RX_PIN);
-  EYE_SYNC_SERIAL.begin(EYE_SYNC_BAUD);
-#elif defined(ARDUINO_ARCH_ESP32)
-  EYE_SYNC_SERIAL.begin(EYE_SYNC_BAUD, SERIAL_8N1, EYE_SYNC_RX_PIN,
-                        EYE_SYNC_TX_PIN);
-#else
-  EYE_SYNC_SERIAL.begin(EYE_SYNC_BAUD);
-#endif
-  // Both boards must report the same clock
-  DBG("sync: %s GPIO%d, %ld baud, clk %lu Hz\n",
+  // Brought up AFTER the display. PicoDVI overclocks the chip
+  // when it starts, and the I2C clock divider is fixed from the peripheral
+  // clock at begin() time.
 #if EYE_SYNC == EYE_SYNC_PRIMARY
-      "PRIMARY sending on", EYE_SYNC_TX_PIN,
+  EYE_SYNC_I2C_WIRE.begin(); // Controller
+  EYE_SYNC_I2C_WIRE.setClock(EYE_SYNC_I2C_HZ);
+  DBG("sync: PRIMARY writing to I2C 0x%02X at %ld Hz, clk %lu Hz\n",
+      EYE_SYNC_I2C_ADDR, (long)EYE_SYNC_I2C_HZ, (unsigned long)platformCpuHz());
 #else
-      "SECONDARY listening on", EYE_SYNC_RX_PIN,
+  EYE_SYNC_I2C_WIRE.begin(EYE_SYNC_I2C_ADDR); // Peripheral
+  EYE_SYNC_I2C_WIRE.onReceive(syncOnReceive);
+  DBG("sync: SECONDARY answering I2C 0x%02X, clk %lu Hz\n", EYE_SYNC_I2C_ADDR,
+      (unsigned long)platformCpuHz());
 #endif
-      (long)EYE_SYNC_BAUD, (unsigned long)platformCpuHz());
   DBG("sync: drawing the %s eye\n", EYE_SYNC_SIDE_RIGHT ? "RIGHT" : "LEFT");
 #endif
 
@@ -292,25 +293,6 @@ static void gazeRadiusInit(void) {
 }
 
 #if EYE_SYNC != EYE_SYNC_OFF
-/**
- * @brief State the two boards must agree on, sent once per frame.
- *
- * Deliberately small: gaze, pupil, blink phase and the primary's clock. Iris
- * rotation is derived from time rather than sent, so carrying the clock keeps
- * both eyes spinning in step while leaving each board its own spin direction
- * and start angle.
- */
-struct __attribute__((packed)) EyeSyncPacket {
-  uint8_t magic; ///< Frame marker, 0xA5
-  int16_t eyeX;  ///< Gaze target in map pixels
-  int16_t eyeY;  ///< Gaze target in map pixels
-  uint16_t iris; ///< Pupil dilation, 0-65535 across the configured range
-  uint8_t blink; ///< Blink phase, 0 open to 255 shut
-  uint32_t ms;   ///< Primary's millis(), so iris rotation stays in step
-  uint8_t sum;   ///< XOR of every preceding byte
-};
-
-#define EYE_SYNC_MAGIC 0xA5 ///< First byte of a sync packet
 
 /** @brief XOR checksum over a packet's leading bytes. */
 static uint8_t syncChecksum(const uint8_t *p) {
@@ -320,10 +302,38 @@ static uint8_t syncChecksum(const uint8_t *p) {
   return x;
 }
 
-static uint32_t syncSent = 0;        ///< Packets transmitted this second
-static uint32_t syncGood = 0;        ///< Valid packets received this second
-static uint32_t syncBad = 0;         ///< Packets dropped on a bad checksum
-static uint32_t syncBytes = 0;       ///< Raw bytes seen on the link this second
+static uint32_t syncSent = 0;          ///< Packets transmitted this second
+static volatile uint32_t syncGood = 0; ///< Valid packets received this second
+static volatile uint32_t syncBad = 0;  ///< Packets dropped on a bad checksum
+static volatile uint32_t syncBytes =
+    0; ///< Raw bytes seen on the link this second
+#if EYE_SYNC == EYE_SYNC_SECONDARY
+/// Packet latched by the I2C interrupt, waiting to be consumed.
+static volatile uint8_t i2cBuf[sizeof(EyeSyncPacket)];
+static volatile bool i2cHave = false; ///< A packet is waiting in i2cBuf
+
+/**
+ * @brief I2C receive interrupt: latch one packet and return.
+ *
+ * Runs in interrupt context, so it does nothing but copy. Validation and the
+ * animation update happen in syncReceive() on the main loop.
+ *
+ * @param n Bytes the controller wrote.
+ */
+static void syncOnReceive(int n) {
+  if (n != (int)sizeof(EyeSyncPacket)) {
+    while (EYE_SYNC_I2C_WIRE.available())
+      EYE_SYNC_I2C_WIRE.read();
+    syncBad++;
+    return;
+  }
+  for (size_t i = 0; i < sizeof(EyeSyncPacket); i++)
+    i2cBuf[i] = (uint8_t)EYE_SYNC_I2C_WIRE.read();
+  syncBytes += (uint32_t)n;
+  i2cHave = true;
+}
+#endif
+
 static int32_t syncClockOffset = 0;  ///< Primary millis() minus ours
 static float syncBlinkFactor = 0.0f; ///< Blink phase from the link
 static bool syncLive = false;        ///< Are packets currently arriving?
@@ -355,8 +365,14 @@ static void syncSend(void) {
   p.blink = (uint8_t)(constrain(eye[0].blinkFactor, 0.0f, 1.0f) * 255.0f);
   p.ms = millis();
   p.sum = syncChecksum((const uint8_t *)&p);
-  EYE_SYNC_SERIAL.write((const uint8_t *)&p, sizeof(p));
-  syncSent++;
+  EYE_SYNC_I2C_WIRE.beginTransmission(EYE_SYNC_I2C_ADDR);
+  EYE_SYNC_I2C_WIRE.write((const uint8_t *)&p, sizeof(p));
+  // Non-zero means the secondary did not acknowledge
+  if (EYE_SYNC_I2C_WIRE.endTransmission() != 0) {
+    syncBad++;
+  } else {
+    syncSent++;
+  }
 }
 #endif
 
@@ -370,35 +386,36 @@ static void syncSend(void) {
  *
  * @return true if a good packet arrived recently enough to trust.
  */
+/**
+ * @brief Adopt a validated packet's state.
+ * @param p Packet already checked for magic and checksum.
+ */
+static void syncApply(const EyeSyncPacket &p) {
+  frameEyeX = (float)p.eyeX;
+  frameEyeY = (float)p.eyeY;
+  irisValue = (float)p.iris / 65535.0f;
+  syncBlinkFactor = (float)p.blink / 255.0f;
+  syncClockOffset = (int32_t)p.ms - (int32_t)millis();
+}
+
 static bool syncReceive(void) {
-  static uint8_t buf[sizeof(EyeSyncPacket)];
-  static uint8_t have = 0;
   static uint32_t lastGood = 0;
 
-  while (EYE_SYNC_SERIAL.available()) {
-    uint8_t b = (uint8_t)EYE_SYNC_SERIAL.read();
-    syncBytes++;
-    // Resynchronise on the magic byte, so a mid-packet start recovers.
-    if (have == 0 && b != EYE_SYNC_MAGIC)
-      continue;
-    buf[have++] = b;
-    if (have < sizeof(buf))
-      continue;
-    have = 0;
-
+  // The interrupt latches a whole packet or nothing
+  if (i2cHave) {
     EyeSyncPacket p;
-    memcpy(&p, buf, sizeof(p));
-    if (p.sum != syncChecksum(buf)) {
+    noInterrupts();
+    memcpy(&p, (const void *)i2cBuf, sizeof(p));
+    i2cHave = false;
+    interrupts();
+    if (p.magic == EYE_SYNC_MAGIC &&
+        p.sum == syncChecksum((const uint8_t *)&p)) {
+      syncGood++;
+      syncApply(p);
+      lastGood = millis();
+    } else {
       syncBad++;
-      continue; // Corrupt; wait for the next
     }
-    syncGood++;
-    frameEyeX = (float)p.eyeX;
-    frameEyeY = (float)p.eyeY;
-    irisValue = (float)p.iris / 65535.0f;
-    syncBlinkFactor = (float)p.blink / 255.0f;
-    syncClockOffset = (int32_t)p.ms - (int32_t)millis();
-    lastGood = millis();
   }
   return (lastGood != 0) && ((millis() - lastGood) < EYE_SYNC_TIMEOUT_MS);
 }
@@ -796,8 +813,9 @@ void loop() {
     Serial.printf("%lu fps\n", frames);
 #endif
 #if EYE_SYNC == EYE_SYNC_PRIMARY
-    DBG("  sync: sent %lu packets\n", (unsigned long)syncSent);
-    syncSent = 0;
+    DBG("  sync: sent %lu packets, %lu failed\n", (unsigned long)syncSent,
+        (unsigned long)syncBad);
+    syncSent = syncBad = 0;
 #elif EYE_SYNC == EYE_SYNC_SECONDARY
     DBG("  sync: %s, %lu good, %lu bad, %lu bytes\n",
         syncLive ? "LOCKED" : "free-running", (unsigned long)syncGood,
@@ -806,10 +824,10 @@ void loop() {
     // needs no advice.
     if (!syncLive) {
       if (syncBytes == 0) {
-        DBGLN("        no bytes -- check TX->RX and a COMMON GROUND");
+        DBGLN("        no bytes -- check the cable and a common ground");
       } else if (syncGood == 0) {
-        DBGLN("        bytes but no valid packets -- check EYE_SYNC_BAUD and"
-              " that both boards report the same clk");
+        DBGLN("        bytes but no valid packets -- do both boards report"
+              " the same clk?");
       }
     } else if (syncBad > syncGood / 8) {
       DBGLN("        many corrupt packets -- shorten the wire or drop the"
