@@ -1,6 +1,5 @@
 var searchData=
 [
-  ['back_5fcolor',['BACK_COLOR',['../settings_8h.html#a6de323223a88added192b027237ada79',1,'settings.h']]],
   ['backcolor',['backColor',['../struct_eye_settings.html#a705ae750a5c094f40acb01c7f0ceb2b1',1,'EyeSettings']]],
   ['bmpinfo',['BmpInfo',['../struct_bmp_info.html',1,'']]],
   ['bmploadeyelid',['bmpLoadEyelid',['../eye_8h.html#ac508284a632d698e1d66537890318b3a',1,'bmpLoadEyelid(BmpReader &amp;r, uint8_t *openTable, uint8_t *closedTable, int size, bool isUpper):&#160;eye_support.cpp'],['../eye__support_8cpp.html#ac508284a632d698e1d66537890318b3a',1,'bmpLoadEyelid(BmpReader &amp;r, uint8_t *openTable, uint8_t *closedTable, int size, bool isUpper):&#160;eye_support.cpp']]],

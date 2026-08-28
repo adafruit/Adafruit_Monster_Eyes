@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['min_5ftexture_5fbudget',['MIN_TEXTURE_BUDGET',['../settings_8h.html#a46be36f2007b18cf9b95ea8100b9166a',1,'settings.h']]]
+  ['profile_5fframe',['PROFILE_FRAME',['../settings_8h.html#a9cc6505623e4f99286930e44756ce139',1,'settings.h']]]
 ];

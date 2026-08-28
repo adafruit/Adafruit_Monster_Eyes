@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['gaze_5fmax',['GAZE_MAX',['../settings_8h.html#a23f24db81162d90b47440a9561829b6e',1,'settings.h']]]
+  ['min_5ftexture_5fbudget',['MIN_TEXTURE_BUDGET',['../settings_8h.html#a46be36f2007b18cf9b95ea8100b9166a',1,'settings.h']]]
 ];

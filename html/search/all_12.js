@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['whiteindex',['whiteIndex',['../struct_bmp_info.html#adfbcb7d503f6ce974b8be2cb880cb39b',1,'BmpInfo']]],
-  ['width',['width',['../struct_bmp_info.html#ae55ae4ae244a5e43bddf503d7815cf3b',1,'BmpInfo']]]
+  ['upperclosed',['upperClosed',['../eye_8h.html#a1dafebf574a02908fb910c09993e46ce',1,'upperClosed():&#160;eye_support.cpp'],['../eye__support_8cpp.html#a234602dda09abbf715f3e2aefd21dda8',1,'upperClosed():&#160;eye_support.cpp']]],
+  ['upperfile',['upperFile',['../struct_eye_settings.html#a121aeb42111c32107565e9db0b0cf83e',1,'EyeSettings']]],
+  ['upperopen',['upperOpen',['../eye_8h.html#a6a4f0eb15e289823e1a1b969c04ac251',1,'upperOpen():&#160;eye_support.cpp'],['../eye__support_8cpp.html#a6a4f0eb15e289823e1a1b969c04ac251',1,'upperOpen():&#160;eye_support.cpp']]]
 ];
