@@ -59,6 +59,28 @@
   } while (0)
 #endif
 
+#if EYE_SYNC != EYE_SYNC_OFF
+/**
+ * @brief State the two boards must agree on, sent once per frame.
+ *
+ * Deliberately small: gaze, pupil, blink phase and the primary's clock. Iris
+ * rotation is derived from time rather than sent, so carrying the clock keeps
+ * both eyes spinning in step while leaving each board its own spin direction
+ * and start angle.
+ */
+struct __attribute__((packed)) EyeSyncPacket {
+  uint8_t magic; ///< Frame marker, 0xA5
+  int16_t eyeX;  ///< Gaze target in map pixels
+  int16_t eyeY;  ///< Gaze target in map pixels
+  uint16_t iris; ///< Pupil dilation, 0-65535 across the configured range
+  uint8_t blink; ///< Blink phase, 0 open to 255 shut
+  uint32_t ms;   ///< Primary's millis(), so iris rotation stays in step
+  uint8_t sum;   ///< XOR of every preceding byte
+};
+
+#define EYE_SYNC_MAGIC 0xA5 ///< First byte of a sync packet
+#endif
+
 #define EYE_DISPLAY_DVI 0     ///< Backend: PicoDVI framebuffer
 #define EYE_DISPLAY_TFT 1     ///< Backend: Adafruit_GFX SPI TFT
 #define EYE_DISPLAY_ESP_LCD 2 ///< Backend: ESP-IDF esp_lcd with DMA
