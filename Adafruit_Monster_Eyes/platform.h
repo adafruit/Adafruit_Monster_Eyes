@@ -211,6 +211,14 @@ static inline bool platformSafeModeRequested(void) {
 #define TFT_RST -1 ///< Not wired on the BFF
 #endif
 
+// ---- Adafruit Qualia ESP32-S3 RGB666 ------------------------------------
+#elif defined(ARDUINO_QUALIA_S3_RGB666)
+#define EYE_BOARD_NAME "Qualia ESP32-S3 RGB666" ///< Board profile name
+#ifndef EYE_PANEL_DEFAULT
+#define EYE_PANEL_DEFAULT EYE_PANEL_RGB666 ///< Parallel RGB round panel
+#endif
+#define EYE_BOARD_DEFAULT_EYES 1 ///< One RGB panel per board
+
 // ---- Anything else ------------------------------------------------------
 #else
 /** Board profile that matched, for the startup banner */

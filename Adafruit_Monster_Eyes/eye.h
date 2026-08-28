@@ -83,7 +83,8 @@ struct __attribute__((packed)) EyeSyncPacket {
 
 #define EYE_DISPLAY_DVI 0     ///< Backend: PicoDVI framebuffer
 #define EYE_DISPLAY_TFT 1     ///< Backend: Adafruit_GFX SPI TFT
-#define EYE_DISPLAY_ESP_LCD 2 ///< Backend: ESP-IDF esp_lcd with DMA
+#define EYE_DISPLAY_ESP_LCD 2 ///< Backend: esp_lcd with DMA
+#define EYE_DISPLAY_RGB 3     ///< Backend: parallel RGB666
 
 // Resolve the auto sentinels now that platform.h has supplied the board
 // profile. NUM_EYES needs this indirection because a profile cannot simply
@@ -100,7 +101,12 @@ struct __attribute__((packed)) EyeSyncPacket {
 #define EYE_PANEL EYE_PANEL_DEFAULT
 #endif
 
-#if EYE_PANEL == EYE_PANEL_DVI
+#if EYE_PANEL == EYE_PANEL_RGB666
+#if !defined(ARDUINO_ARCH_ESP32)
+#error "EYE_PANEL_RGB666 needs an ESP32-S3 -- the RGB peripheral is ESP32 only."
+#endif
+#define EYE_DISPLAY EYE_DISPLAY_RGB
+#elif EYE_PANEL == EYE_PANEL_DVI
 #if !defined(ARDUINO_ARCH_RP2040)
 #error "EYE_PANEL_DVI needs an RP2040 or RP2350 -- PicoDVI is RP2 only."
 #endif
