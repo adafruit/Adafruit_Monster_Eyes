@@ -270,27 +270,31 @@ static void seedVariants(void);
 
 void eyeSettingsDefaults(void) {
   memset(&settings, 0, sizeof(settings));
-  settings.displaySize = DISPLAY_SIZE;
-  settings.eyeRadius = EYE_RADIUS;
-  settings.irisRadius = IRIS_RADIUS;
-  settings.slitPupilRadius = SLIT_PUPIL_RADIUS;
-  settings.coverage = COVERAGE;
-  settings.coverageRequested = COVERAGE;
-  settings.pupilColor = PUPIL_COLOR;
-  settings.backColor = BACK_COLOR;
-  settings.eyelidColor = EYELID_COLOR;
-  settings.irisColor = IRIS_COLOR;
-  settings.scleraColor = SCLERA_COLOR;
-  settings.pupilMin = PUPIL_MIN;
-  settings.pupilMax = PUPIL_MAX;
-  settings.tracking = TRACKING;
-  settings.trackFactor = TRACK_FACTOR;
-  settings.gazeMax = GAZE_MAX;
-  settings.irisSpin = IRIS_SPIN;
+
+  settings.displaySize = 0;
+  settings.eyeRadius = 0;
+  settings.irisRadius = 0;
+  settings.slitPupilRadius = 0;
+  settings.coverage = 0.6f;
+  settings.coverageRequested = settings.coverage;
+
+  settings.pupilColor = 0x0000;
+  settings.backColor = 0x5000;
+  settings.eyelidColor = 0x0000;
+  settings.irisColor = 0x001F;
+  settings.scleraColor = 0xFFFF;
+
+  settings.pupilMin = 0.05f;
+  settings.pupilMax = 0.25f;
+  settings.tracking = true;
+  settings.trackFactor = 0.5f;
+  settings.gazeMax = 3000000;
+  settings.irisSpin = 0.0f;
   settings.scleraSpin = 0.0f;
-  settings.irisStartAngle = IRIS_START_ANGLE;
-  settings.scleraStartAngle = IRIS_START_ANGLE;
-  settings.eyelidMirror = EYELID_MIRROR;
+  settings.irisStartAngle = 512;
+  settings.scleraStartAngle = 512;
+  settings.eyelidMirror = true;
+
   seedVariants();
 }
 

@@ -72,6 +72,27 @@ static uint32_t accFrameMicros = 0, accBusyMicros = 0;
 
 // SETUP -------------------------------------------------------------------
 
+/**
+ * @brief Report a fatal problem and stop.
+ *
+ * Blinks the built-in LED where there is one, otherwise prints
+ * to Serial.
+ *
+ * @param why Short description, printed once.
+ */
+static void eyeHalt(const char *why) {
+  Serial.print("HALT: ");
+  Serial.println(why);
+#ifdef LED_BUILTIN
+  pinMode(LED_BUILTIN, OUTPUT);
+  for (;;)
+    digitalWrite(LED_BUILTIN, (millis() / 200) & 1);
+#else
+  for (;;)
+    delay(1000);
+#endif
+}
+
 void setup() {
   Serial.begin(115200);
 
@@ -115,11 +136,7 @@ void setup() {
   // allocation in the sketch, which must not have to fight fragmentation.
   DBGLN("[3] display");
   if (!displayBegin()) {
-    // Framebuffer allocation failed. Almost always means the eye tables or
-    // something else claimed RAM first, or the resolution is too large.
-    pinMode(LED_BUILTIN, OUTPUT);
-    for (;;)
-      digitalWrite(LED_BUILTIN, (millis() / 200) & 1);
+    eyeHalt("Display init failed");
   }
   DBG("Display ready, max eye %d. Free heap: %u\n", displayMaxEyeSize(),
       platformFreeHeap());

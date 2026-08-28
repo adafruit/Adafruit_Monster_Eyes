@@ -25,6 +25,7 @@
 //   EYE_PANEL_GC9A01A   240x240 round TFT
 //   EYE_PANEL_ILI9341   240x320 TFT (Adafruit backend only)
 //   EYE_PANEL_DVI       HDMI/DVI output via PicoDVI (RP2 only)
+//   EYE_PANEL_RGB666    parallel RGB666 round panel on an Adafruit Qualia S3
 
 #define EYE_PANEL_AUTO 0    ///< Take the panel the board profile picks
 #define EYE_PANEL_ST7789 1  ///< 240x240 or 240x320 square/rectangular TFT
@@ -72,6 +73,33 @@
 #endif
 #ifndef TFT_BACKLIGHT
 // #define TFT_BACKLIGHT -1 // -1 if not switchable
+#endif
+
+// =========================================================================
+//  2b. QUALIA RGB666 PANEL (EYE_PANEL_RGB666 only)
+// =========================================================================
+//
+// Only the round displays are supported
+#define QUALIA_PANEL_21_480 0 ///< 2.1 inch 480x480 round
+#define QUALIA_PANEL_28_480 1 ///< 2.8 inch 480x480 round
+#define QUALIA_PANEL_40_720 2 ///< 4.0 inch 720x720 round
+
+#ifndef QUALIA_PANEL
+#define QUALIA_PANEL QUALIA_PANEL_21_480 ///< Which round display is attached
+#endif
+
+// The eye is rendered this many times smaller than the panel, then each pixel
+// is replicated on the way out.
+#ifndef EYE_SCALE
+#if QUALIA_PANEL == QUALIA_PANEL_40_720
+#define EYE_SCALE 3 ///< 720 panel from a 240 eye
+#else
+#define EYE_SCALE 2 ///< 480 panel from a 240 eye
+#endif
+#endif
+
+#ifndef RGB_STRIPE_COLS
+#define RGB_STRIPE_COLS 8 ///< Columns batched into one draw16bitRGBBitmap
 #endif
 
 // =========================================================================
@@ -274,8 +302,10 @@
 #endif
 
 // =========================================================================
-//  6. FALLBACK EYE (used only when the drive has no config.eye)
+//  6. ASSET LOCATION
 // =========================================================================
+// Pointers to config.eye on the CIRCUITPY drive
+//
 
 #ifndef CONFIG_FILENAME
 /** Path to the JSON eye configuration on the drive */
@@ -292,73 +322,6 @@
 #endif
 #endif
 
-// 0 means "fill the display". The three radii scale with it when left at
-// their auto values, keeping the stock proportions at any size.
-#ifndef DISPLAY_SIZE
-#define DISPLAY_SIZE 0 ///< Fallback eye size in pixels; 0 fills the display
-#endif
-#ifndef EYE_RADIUS
-#define EYE_RADIUS 0 ///< Fallback eyeball radius; 0 derives displaySize/2 + 5
-#endif
-#ifndef IRIS_RADIUS
-#define IRIS_RADIUS 0 ///< Fallback iris radius; 0 derives 0.4583 * displaySize
-#endif
-#ifndef SLIT_PUPIL_RADIUS
-#define SLIT_PUPIL_RADIUS 0 ///< Fallback slit pupil; 0 round, -1 auto
-#endif
-#ifndef COVERAGE
-/** Fraction of the eyeball the polar map spans; keep above 0.55 */
-#define COVERAGE 0.6f
-#endif
-
-#ifndef PUPIL_COLOR
-#define PUPIL_COLOR 0x0000 ///< Fallback pupil colour, native-endian RGB565
-#endif
-#ifndef BACK_COLOR
-#define BACK_COLOR 0x5000 ///< Fallback back-of-eye colour, native-endian RGB565
-#endif
-#ifndef EYELID_COLOR
-#define EYELID_COLOR 0x0000 ///< Fallback eyelid colour, native-endian RGB565
-#endif
-#ifndef IRIS_COLOR
-#define IRIS_COLOR 0x001F ///< Fallback iris colour when no texture loads
-#endif
-#ifndef SCLERA_COLOR
-#define SCLERA_COLOR 0xFFFF ///< Fallback sclera colour when no texture loads
-#endif
-
-#ifndef PUPIL_MIN
-#define PUPIL_MIN 0.05f ///< Smallest pupil as a fraction of the iris
-#endif
-#ifndef PUPIL_MAX
-#define PUPIL_MAX 0.25f ///< Largest pupil as a fraction of the iris
-#endif
-// Eyelid tracking: the upper lid follows the iris, so the eye rests partly
-// closed rather than staring. On by default, matching upstream M4_Eyes.
-// TRACK_FACTOR is 1.0 - squint; config.eye sets "squint" instead.
-#ifndef TRACKING
-/** Upper eyelid follows the iris, so the eye rests partly closed */
-#define TRACKING 1
-#endif
-#ifndef TRACK_FACTOR
-#define TRACK_FACTOR 0.5f ///< 1.0 minus squint; how far the lid drops at rest
-#endif
-#ifndef GAZE_MAX
-/** Longest wait between major eye movements, microseconds */
-#define GAZE_MAX 3000000
-#endif
-#ifndef IRIS_SPIN
-/** Fallback iris rotation in RPM, positive is clockwise */
-#define IRIS_SPIN -18.0f
-#endif
-#ifndef IRIS_START_ANGLE
-/** Fallback initial iris rotation, 0-1023 counter-clockwise */
-#define IRIS_START_ANGLE 512
-#endif
-#ifndef EYELID_MIRROR
-#define EYELID_MIRROR 1 ///< Mirror the eyelid shape horizontally
-#endif
-// Two eyes toe in slightly, in polar-map pixels. Ignored for one eye.
 #ifndef EYE_FIXATE
 /** Convergence of two eyes toward the face centre, map pixels */
 #define EYE_FIXATE 7
