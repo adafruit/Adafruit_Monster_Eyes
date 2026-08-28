@@ -208,7 +208,8 @@
 #endif
 // The STEMMA QT cable uses the default Wire pins:
 // (Pico GPIO 4/5, Feather RP2040 DVI GPIO 2/3)
-// The primary is the I2C controller and writes packets to the secondary's address.
+// The primary is the I2C controller and writes packets to the secondary's
+// address.
 //
 #ifndef EYE_SYNC_I2C_ADDR
 #define EYE_SYNC_I2C_ADDR 0x42 ///< Address the secondary answers to
