@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """GitHub Actions build matrix.
 
-One source of truth for every board this project builds for. The workflow asks
+Every board this project builds for. The workflow asks
 for either the full release set or a small CI test set
 """
 
@@ -60,9 +60,21 @@ def core_of(fqbn):
     return "rp2040" if fqbn.startswith("rp2040:") else "esp32"
 
 
+def family_of(fqbn):
+    """UF2 family ID for an ESP32 board, or "" for RP2."""
+    if not fqbn.startswith("esp32:"):
+        return ""
+    board = fqbn.split(":")[2].split(",")[0]
+    if "esp32s3" in board or "s3_rgb666" in board:
+        return "0xc47e5767"  # ESP32-S3
+    if "esp32s2" in board:
+        return "0xbfdd4eee"  # ESP32-S2
+    raise SystemExit(f"No UF2 family known for {board}; add it to family_of()")
+
+
 def entry(name, fqbn, bundle, defines, asset=None):
     e = {"name": name, "fqbn": fqbn, "core": core_of(fqbn),
-         "bundle": bundle, "defines": defines}
+         "family": family_of(fqbn), "bundle": bundle, "defines": defines}
     if asset:
         e["asset"] = asset
     return e

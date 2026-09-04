@@ -107,13 +107,20 @@ jobs:
           BASE="${{ matrix.asset || matrix.name }}"
           mkdir -p dist
           if ls "$SRC"/*.uf2 >/dev/null 2>&1; then
-            cp "$SRC"/*.uf2 "dist/$BASE.uf2"                 # RP2040 / RP2350
-          elif ls "$SRC"/*.merged.bin >/dev/null 2>&1; then
-            cp "$SRC"/*.merged.bin "dist/$BASE.bin"          # ESP32, flash at 0x0
-          elif ls "$SRC"/*.ino.bin >/dev/null 2>&1; then
-            cp "$SRC"/*.ino.bin "dist/$BASE.bin"             # ESP32 fallback
+            cp "$SRC"/*.uf2 "dist/$BASE.uf2"      # RP2040 / RP2350, native
+          elif [ -n "${{ matrix.family }}" ]; then
+            wget -q --no-check-certificate \
+              https://raw.githubusercontent.com/microsoft/uf2/master/utils/uf2conv.py \
+              https://raw.githubusercontent.com/microsoft/uf2/master/utils/uf2families.json
+            # The APP binary: the bootloader is already on the board.
+            APP=$(ls "$SRC"/*.ino.bin 2>/dev/null | head -n 1)
+            if [ -z "$APP" ]; then
+              echo "No .ino.bin to convert in $SRC" >&2; ls -la "$SRC" >&2; exit 1
+            fi
+            python3 uf2conv.py "$APP" -c -f "${{ matrix.family }}" \
+              -b 0x0000 -o "dist/$BASE.uf2"
           else
-            echo "No .uf2 or .bin produced in $SRC" >&2
+            echo "No .uf2 and no UF2 family for this board" >&2
             ls -la "$SRC" >&2
             exit 1
           fi
