@@ -12,10 +12,9 @@
 #if defined(ARDUINO_ADAFRUIT_FEATHER_RP2040_DVI)
 #define DVI_CFG adafruit_feather_dvi_cfg
 #else
-#define DVI_CFG                                                                
-  adafruit_dvibell_cfg // PiCowbell DVI;
-                       // pico_sock_cfg // Pico DVI Sock
-                       // pimoroni_demo_hdmi_cfg // Pimoroni Pico DV
+#define DVI_CFG adafruit_dvibell_cfg // PiCowbell DVI;
+                                     // pico_sock_cfg // Pico DVI Sock
+                                     // pimoroni_demo_hdmi_cfg // Pimoroni Pico DV
 #endif
 
 DVIGFX16 dvi(DVI_RES_320x240p60, DVI_CFG);
