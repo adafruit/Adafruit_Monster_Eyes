@@ -58,7 +58,7 @@ static bool IRAM_ATTR onColorDone(esp_lcd_panel_io_handle_t io,
   (void)ev;
   const int e = (int)(intptr_t)ctx;
   if (s_pending[e] > 0)
-    s_pending[e]--;
+    s_pending[e] = s_pending[e] - 1;
   return false;
 }
 
@@ -254,7 +254,7 @@ void Eyes_ESPLCD::fillPanel(int eye, uint16_t color) {
       drain(eye, 0);
       esp_lcd_panel_draw_bitmap((esp_lcd_panel_handle_t)_panel[eye], x, y,
                                 x + cols, y + rows, _scratch);
-      s_pending[eye]++;
+      s_pending[eye] = s_pending[eye] + 1;
     }
   }
   drain(eye, 0);
@@ -269,7 +269,7 @@ void Eyes_ESPLCD::flushStripe(int eye, int x0, int width, uint16_t *buf) {
   esp_lcd_panel_draw_bitmap((esp_lcd_panel_handle_t)_panel[eye], _originX + x0,
                             _originY, _originX + x0 + width,
                             _originY + _eyeSize, buf);
-  s_pending[eye]++;
+  s_pending[eye] = s_pending[eye] + 1;
   // One transfer may stay in flight; the base class has already flipped to the
   // other buffer by the time the renderer writes again.
   drain(eye, 1);

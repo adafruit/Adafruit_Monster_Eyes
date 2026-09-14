@@ -92,12 +92,12 @@ static void syncOnReceive(int n) {
   if (n != (int)sizeof(EyesSyncPacket)) {
     while (s_wire->available())
       s_wire->read();
-    s_rejected++;
+    s_rejected = s_rejected + 1;
     return;
   }
   for (size_t i = 0; i < sizeof(EyesSyncPacket); i++)
     s_buf[i] = (uint8_t)s_wire->read();
-  s_bytes += (uint32_t)n;
+  s_bytes = s_bytes + (uint32_t)n;
   s_have = true;
 }
 
