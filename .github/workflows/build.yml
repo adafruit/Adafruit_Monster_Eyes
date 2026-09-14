@@ -109,7 +109,7 @@ jobs:
         env:
           GH_REPO_TOKEN: ${{ secrets.GH_REPO_TOKEN }}
           PRETTYNAME: "Adafruit Monster Eyes"
-        run: bash ci/doxy_gen_and_deploy.sh Adafruit_Monster_Eyes
+        run: bash ci/doxy_gen_and_deploy.sh
 
   # One zip per board
   bundle:
