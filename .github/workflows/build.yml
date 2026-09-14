@@ -10,25 +10,33 @@ on:
     types: [published]
 
 jobs:
-  # matrix lives in tools/ci_matrix.py
-  matrix:
+  # Pushes build a four, releases build all
+  platforms:
     runs-on: ubuntu-latest
     outputs:
-      include: ${{ steps.gen.outputs.include }}
+      list: ${{ steps.pick.outputs.list }}
     steps:
-      - uses: actions/checkout@v4
-      - id: gen
+      - id: pick
         run: |
+          # Platform names come from adafruit/ci-arduino's all_platforms.py
+          # The _tinyusb variants are required
+          FULL='["feather_rp2040_tinyusb","metro_rp2040_tinyusb",
+                 "feather_rp2350_tinyusb","metro_rp2350_tinyusb",
+                 "feather_esp32s2","feather_esp32s3","metro_esp32s3",
+                 "qtpy_esp32s2","feather_rp2040_dvi_tinyusb",
+                 "pico_rp2040_tinyusb","qualia_s3_rgb666"]'
+          PR_CI='["feather_rp2040_tinyusb","feather_esp32s3",
+                  "pico_rp2040_tinyusb","qualia_s3_rgb666"]'
           if [ "${{ github.event_name }}" = "release" ] || \
              [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            python3 tools/ci_matrix.py release >> "$GITHUB_OUTPUT"
+            LIST="$FULL"
           else
-            python3 tools/ci_matrix.py smoke >> "$GITHUB_OUTPUT"
+            LIST="$PR_CI"
           fi
-          python3 tools/ci_matrix.py | head -1
+          echo "list=$(echo "$LIST" | tr -d ' \n')" >> "$GITHUB_OUTPUT"
 
   build:
-    needs: matrix
+    needs: platforms
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -38,98 +46,47 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(needs.matrix.outputs.include) }}
+        platform: ${{ fromJSON(needs.platforms.outputs.list) }}
 
-    name: ${{ matrix.name }}
+    name: ${{ matrix.platform }}
     steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: adafruit/ci-arduino
+          path: ci
 
-      - uses: arduino/setup-arduino-cli@v2
+      - name: pre-install
+        run: bash ci/actions_install.sh
 
-      - name: Add board manager URLs
-        run: |
-          arduino-cli config init
-          arduino-cli config add board_manager.additional_urls \
-            https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
-          arduino-cli config add board_manager.additional_urls \
-            https://espressif.github.io/arduino-esp32/package_esp32_index.json
-          arduino-cli core update-index
+      - name: build
+        run: python3 ci/build_platform.py ${{ matrix.platform }}
 
-      - name: Install core
-        run: arduino-cli core install ${{ matrix.core }}:${{ matrix.core }}
-
-      - name: Install libraries
-        run: |
-          arduino-cli lib install \
-            "Adafruit GFX Library" \
-            "Adafruit BusIO" \
-            "Adafruit ST7735 and ST7789 Library" \
-            "Adafruit GC9A01A" \
-            "Adafruit ILI9341" \
-            "ArduinoJson" \
-            "SdFat - Adafruit Fork" \
-            "Adafruit SPIFlash" \
-            "GFX Library for Arduino"
-          if [ "${{ matrix.core }}" = "esp32" ]; then
-            arduino-cli lib install "Adafruit TinyUSB Library"
-          fi
-          # PicoDVI is the Adafruit fork and is not in the library index.
-          if [ "${{ matrix.core }}" = "rp2040" ]; then
-            git clone --depth 1 https://github.com/adafruit/PicoDVI.git \
-              "$HOME/Arduino/libraries/PicoDVI"
-          fi
-
-      - name: Locate the sketch
-        id: sketch
-        run: |
-          INO=$(find . -name '*.ino' -not -path './build/*' | head -n 1)
-          if [ -z "$INO" ]; then
-            echo "No .ino found in the checkout." >&2
-            exit 1
-          fi
-          DIR=$(dirname "$INO")
-          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
-          echo "Sketch: $INO (directory $DIR)"
-
-      - name: Compile
-        run: |
-          arduino-cli compile \
-            --fqbn "${{ matrix.fqbn }}" \
-            --build-property "compiler.cpp.extra_flags=${{ matrix.defines }}" \
-            --output-dir "build/${{ matrix.name }}" \
-            --warnings default \
-            "${{ steps.sketch.outputs.dir }}"
-
-      - name: Collect the binary
+      - name: Collect the UF2s
         if: env.PUBLISH == 'true'
         run: |
-          SRC="build/${{ matrix.name }}"
-          BASE="${{ matrix.asset || matrix.name }}"
-          mkdir -p dist
-          if ls "$SRC"/*.uf2 >/dev/null 2>&1; then
-            cp "$SRC"/*.uf2 "dist/$BASE.uf2"      # RP2040 / RP2350, native
-          elif [ -n "${{ matrix.family }}" ]; then
-            wget -q --no-check-certificate \
-              https://raw.githubusercontent.com/microsoft/uf2/master/utils/uf2conv.py \
-              https://raw.githubusercontent.com/microsoft/uf2/master/utils/uf2families.json
-            # The APP binary: the bootloader is already on the board.
-            APP=$(ls "$SRC"/*.ino.bin 2>/dev/null | head -n 1)
-            if [ -z "$APP" ]; then
-              echo "No .ino.bin to convert in $SRC" >&2; ls -la "$SRC" >&2; exit 1
-            fi
-            python3 uf2conv.py "$APP" -c -f "${{ matrix.family }}" \
-              -b 0x0000 -o "dist/$BASE.uf2"
-          else
-            echo "No .uf2 and no UF2 family for this board" >&2
-            ls -la "$SRC" >&2
+          set -e
+          mkdir -p "dist/${{ matrix.platform }}"
+          found=0
+          for f in examples/*/build/*/*.uf2; do
+            [ -e "$f" ] || continue
+            ex=$(echo "$f" | cut -d/ -f2)
+            cp "$f" "dist/${{ matrix.platform }}/$ex.uf2"
+            found=1
+          done
+          if [ "$found" = "0" ]; then
+            echo "No UF2s for ${{ matrix.platform }} -- is a .generate marker missing?" >&2
             exit 1
           fi
-          ls -l dist
+          ls -l "dist/${{ matrix.platform }}"
 
       - uses: actions/upload-artifact@v4
         if: env.PUBLISH == 'true'
         with:
-          name: ${{ matrix.bundle }}__${{ matrix.name }}
+          name: uf2-${{ matrix.platform }}
           path: dist/*
           if-no-files-found: error
 
@@ -154,8 +111,7 @@ jobs:
           PRETTYNAME: "Adafruit Monster Eyes"
         run: bash ci/doxy_gen_and_deploy.sh Adafruit_Monster_Eyes
 
-  # Builds are grouped into one zip per board, so a release lists a handful of
-  # named archives
+  # One zip per board
   bundle:
     needs: build
     if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
@@ -166,24 +122,16 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: incoming
+          pattern: uf2-*
+          merge-multiple: true
 
-      - name: Group by board and zip
+      - name: Zip each board
         run: |
           set -e
-          # Each artifact arrives as incoming/<bundle>__<name>/<file>.
-          for d in incoming/*/; do
-            a=$(basename "$d")
-            case "$a" in
-              *__*) grp="${a%%__*}" ;;
-              *) echo "Skipping unexpected artifact $a" >&2; continue ;;
-            esac
-            mkdir -p "stage/$grp"
-            cp "$d"* "stage/$grp/"
-          done
           mkdir -p out
-          for g in stage/*/; do
-            g=$(basename "$g")
-            (cd stage && zip -r "../out/$g.zip" "$g")
+          for d in incoming/*/; do
+            b=$(basename "$d")
+            (cd incoming && zip -r "../out/$b.zip" "$b")
           done
           echo "== assembled =="
           for z in out/*.zip; do
