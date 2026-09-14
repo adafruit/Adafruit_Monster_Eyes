@@ -147,7 +147,8 @@ public:
   /** @brief Eyes this backend can show. @return 1 or 2. */
   uint8_t eyeCount(void) const { return _numEyes; }
 
-  /** @brief Current eye size in pixels. @return Size, or 0 before setEyeSize(). */
+  /** @brief Current eye size in pixels. @return Size, or 0 before setEyeSize().
+   */
   int eyeSize(void) const { return _eyeSize; }
 
   /** @brief Pixels to advance between successive rows of a column.
@@ -286,17 +287,17 @@ protected:
   /** @brief Pixels one stripe buffer can hold. @return Capacity. */
   size_t stripeCapacity(void) const { return _stripePixels; }
 
-  int _panelW;         ///< Panel width in pixels
-  int _panelH;         ///< Panel height in pixels
-  int _originX;        ///< Eye left edge in panel pixels
-  int _originY;        ///< Eye top edge in panel pixels
-  int _outScale;       ///< Panel pixels per rendered pixel; RGB666 uses > 1
-  int _stripeW;        ///< Columns per transfer
-  int _stripeBase;     ///< First column of the stripe being filled
-  int _maxStripeCols;  ///< Cap on _stripeW
-  int _buffers;        ///< Stripe buffers allocated
-  uint8_t _bufIdx;     ///< Buffer currently being filled
-  uint16_t *_scratch;  ///< _buffers * _stripePixels pixels
+  int _panelW;          ///< Panel width in pixels
+  int _panelH;          ///< Panel height in pixels
+  int _originX;         ///< Eye left edge in panel pixels
+  int _originY;         ///< Eye top edge in panel pixels
+  int _outScale;        ///< Panel pixels per rendered pixel; RGB666 uses > 1
+  int _stripeW;         ///< Columns per transfer
+  int _stripeBase;      ///< First column of the stripe being filled
+  int _maxStripeCols;   ///< Cap on _stripeW
+  int _buffers;         ///< Stripe buffers allocated
+  uint8_t _bufIdx;      ///< Buffer currently being filled
+  uint16_t *_scratch;   ///< _buffers * _stripePixels pixels
   size_t _stripePixels; ///< Pixels in one stripe buffer
 };
 
