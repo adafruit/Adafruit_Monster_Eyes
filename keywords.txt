@@ -1,0 +1,125 @@
+#######################################
+# Syntax Coloring Map For Adafruit Monster Eyes
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+Adafruit_Monster_Eyes	KEYWORD1
+Eyes_Display	KEYWORD1
+Eyes_StripeDisplay	KEYWORD1
+Eyes_TFT	KEYWORD1
+Eyes_DVI	KEYWORD1
+Eyes_RGB666	KEYWORD1
+Eyes_ESPLCD	KEYWORD1
+Eyes_SyncPrimary	KEYWORD1
+Eyes_SyncSecondary	KEYWORD1
+EyesSettings	KEYWORD1
+EyesVariant	KEYWORD1
+EyesSyncPacket	KEYWORD1
+BmpReader	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+animate	KEYWORD2
+update	KEYWORD2
+draw	KEYWORD2
+frameRate	KEYWORD2
+renderMillis	KEYWORD2
+transferMillis	KEYWORD2
+errorString	KEYWORD2
+resetPanels	KEYWORD2
+setVerbose	KEYWORD2
+setSelfTest	KEYWORD2
+setProfile	KEYWORD2
+setFastSPI	KEYWORD2
+
+setPupil	KEYWORD2
+releasePupil	KEYWORD2
+pupil	KEYWORD2
+setGaze	KEYWORD2
+releaseGaze	KEYWORD2
+gazeX	KEYWORD2
+gazeY	KEYWORD2
+blink	KEYWORD2
+setBlink	KEYWORD2
+releaseBlink	KEYWORD2
+setAutoBlink	KEYWORD2
+setAutoGaze	KEYWORD2
+
+setEyeSize	KEYWORD2
+setEyeRadius	KEYWORD2
+setIrisRadius	KEYWORD2
+setSlitPupilRadius	KEYWORD2
+setCoverage	KEYWORD2
+setIrisColor	KEYWORD2
+setScleraColor	KEYWORD2
+setPupilColor	KEYWORD2
+setBackColor	KEYWORD2
+setEyelidColor	KEYWORD2
+setPupilRange	KEYWORD2
+setTracking	KEYWORD2
+setSquint	KEYWORD2
+setIrisSpin	KEYWORD2
+setScleraSpin	KEYWORD2
+setGazeMax	KEYWORD2
+setFixate	KEYWORD2
+setIrisTexture	KEYWORD2
+setScleraTexture	KEYWORD2
+setUpperEyelid	KEYWORD2
+setLowerEyelid	KEYWORD2
+config	KEYWORD2
+variant	KEYWORD2
+
+setConfigFile	KEYWORD2
+setStorageEnabled	KEYWORD2
+setDriveModeEnabled	KEYWORD2
+setSide	KEYWORD2
+driveModeRequested	KEYWORD2
+runDriveMode	KEYWORD2
+loadConfig	KEYWORD2
+
+gazeMapX	KEYWORD2
+gazeMapY	KEYWORD2
+setGazeMap	KEYWORD2
+irisFraction	KEYWORD2
+setIrisFraction	KEYWORD2
+blinkPhase	KEYWORD2
+setBlinkPhase	KEYWORD2
+setTimeOffset	KEYWORD2
+timeOffset	KEYWORD2
+mapRadius	KEYWORD2
+eyeCount	KEYWORD2
+eyeSize	KEYWORD2
+display	KEYWORD2
+
+setStripeColumns	KEYWORD2
+setSPISpeed	KEYWORD2
+setSPIHost	KEYWORD2
+setOrientation	KEYWORD2
+setBacklightPin	KEYWORD2
+
+send	KEYWORD2
+poll	KEYWORD2
+setTimeout	KEYWORD2
+live	KEYWORD2
+report	KEYWORD2
+resetCounts	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+EYES_ESPLCD_ST7789	LITERAL1
+EYES_ESPLCD_GC9A01A	LITERAL1
+EYES_SYNC_MAGIC	LITERAL1
+EYES_PATH_MAX	LITERAL1
+MONSTER_EYES_MAX_EYES	LITERAL1
+MONSTER_EYES_LOG_LEVEL	LITERAL1
+MONSTER_EYES_HEAP_RESERVE	LITERAL1
+MONSTER_EYES_MIN_TEXTURE_BUDGET	LITERAL1
+MONSTER_EYES_CIRCUITPY_PARTITION	LITERAL1
