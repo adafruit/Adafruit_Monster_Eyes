@@ -108,21 +108,21 @@ private:
   void drain(int eye, int limit);
   void fillPanel(int eye, uint16_t color);
 
-  EyesESPLCDDriver _driver;               ///< Panel controller
-  int _sck;                               ///< SPI clock GPIO
-  int _mosi;                              ///< SPI data-out GPIO
-  int _cs[MONSTER_EYES_MAX_EYES];         ///< Chip select per panel
-  int _dc[MONSTER_EYES_MAX_EYES];         ///< Data/command per panel
-  int _rst[MONSTER_EYES_MAX_EYES];        ///< Reset per panel
-  void *_io[MONSTER_EYES_MAX_EYES];       ///< esp_lcd_panel_io_handle_t
-  void *_panel[MONSTER_EYES_MAX_EYES];    ///< esp_lcd_panel_handle_t
-  uint32_t _pclkHz;                       ///< Pixel clock
-  int _host;                              ///< SPI host
-  int _backlight;                         ///< Backlight GPIO, or -1
-  bool _invert;                           ///< Invert colours
-  bool _swapXY;                           ///< Exchange rows and columns
-  bool _mirrorX;                          ///< Mirror horizontally
-  bool _mirrorY;                          ///< Mirror vertically
+  EyesESPLCDDriver _driver;            ///< Panel controller
+  int _sck;                            ///< SPI clock GPIO
+  int _mosi;                           ///< SPI data-out GPIO
+  int _cs[MONSTER_EYES_MAX_EYES];      ///< Chip select per panel
+  int _dc[MONSTER_EYES_MAX_EYES];      ///< Data/command per panel
+  int _rst[MONSTER_EYES_MAX_EYES];     ///< Reset per panel
+  void *_io[MONSTER_EYES_MAX_EYES];    ///< esp_lcd_panel_io_handle_t
+  void *_panel[MONSTER_EYES_MAX_EYES]; ///< esp_lcd_panel_handle_t
+  uint32_t _pclkHz;                    ///< Pixel clock
+  int _host;                           ///< SPI host
+  int _backlight;                      ///< Backlight GPIO, or -1
+  bool _invert;                        ///< Invert colours
+  bool _swapXY;                        ///< Exchange rows and columns
+  bool _mirrorX;                       ///< Mirror horizontally
+  bool _mirrorY;                       ///< Mirror vertically
 };
 
 #endif // ARDUINO_ARCH_ESP32

@@ -115,8 +115,7 @@ bool Eyes_StripeDisplay::setEyeSize(int size) {
   if (_buffers < 1)
     _buffers = 1;
   _stripePixels = (size_t)_stripeW * size;
-  _scratch =
-      allocStripe(_stripePixels * (size_t)_buffers * sizeof(uint16_t));
+  _scratch = allocStripe(_stripePixels * (size_t)_buffers * sizeof(uint16_t));
   _bufIdx = 0;
   _stripeBase = 0;
   if (!_scratch) {

@@ -42,11 +42,11 @@ public:
   void selfTest(void) override;
 
 private:
-  DVIGFX16 *_dvi;                          ///< Sketch's framebuffer object
-  int _fbW;                                ///< Framebuffer width
-  int _fbH;                                ///< Framebuffer height
-  int _originX[MONSTER_EYES_MAX_EYES];     ///< Eye left edge per eye
-  int _originY;                            ///< Eye top edge, shared
+  DVIGFX16 *_dvi;                      ///< Sketch's framebuffer object
+  int _fbW;                            ///< Framebuffer width
+  int _fbH;                            ///< Framebuffer height
+  int _originX[MONSTER_EYES_MAX_EYES]; ///< Eye left edge per eye
+  int _originY;                        ///< Eye top edge, shared
 };
 
 #endif // ARDUINO_ARCH_RP2040

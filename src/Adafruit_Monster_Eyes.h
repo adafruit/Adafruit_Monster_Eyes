@@ -50,31 +50,31 @@
 
 /** @brief Everything a config.eye file can change about the eye. */
 struct EyesSettings {
-  int displaySize;         ///< Eye width and height in pixels; 0 fills the display
-  int eyeRadius;           ///< Eyeball radius in screen pixels; 0 derives it
-  int irisRadius;          ///< Iris radius in screen pixels; 0 derives it
-  int slitPupilRadius;     ///< Slit pupil radius; 0 round, -1 derives it
-  float coverage;          ///< Effective, possibly raised by finalize()
-  float coverageRequested; ///< What the sketch or config actually asked for
-  uint16_t pupilColor;     ///< Pupil colour, native-endian RGB565
-  uint16_t backColor;      ///< Back-of-eye colour, seen at extreme gaze
-  uint16_t eyelidColor;    ///< Eyelid colour
-  uint16_t irisColor;      ///< Iris colour used when no texture loads
-  uint16_t scleraColor;    ///< Sclera colour used when no texture loads
-  float pupilMin;          ///< Smallest pupil as a fraction of the iris
-  float pupilMax;          ///< Largest pupil as a fraction of the iris
-  bool tracking;           ///< Upper lid follows the iris
-  float trackFactor;       ///< 1.0 minus squint; how far the lid rests down
-  uint32_t gazeMax;        ///< Longest wait between major eye movements, us
-  float irisSpin;          ///< Iris rotation in RPM, positive is clockwise
-  float scleraSpin;        ///< Sclera rotation in RPM
-  uint16_t irisStartAngle; ///< Initial iris rotation, 0-1023 CCW
-  uint16_t scleraStartAngle;     ///< Initial sclera rotation, 0-1023 CCW
-  uint16_t irisMirror;           ///< 0 or 1023; 1023 mirrors the iris texture
-  uint16_t scleraMirror;         ///< 0 or 1023; 1023 mirrors the sclera
-  bool eyelidMirror;             ///< Mirror the eyelid shape horizontally
-  int fixate;                    ///< Convergence toward the face, map pixels
-  char irisFile[EYES_PATH_MAX];  ///< Iris texture path on the drive
+  int displaySize;     ///< Eye width and height in pixels; 0 fills the display
+  int eyeRadius;       ///< Eyeball radius in screen pixels; 0 derives it
+  int irisRadius;      ///< Iris radius in screen pixels; 0 derives it
+  int slitPupilRadius; ///< Slit pupil radius; 0 round, -1 derives it
+  float coverage;      ///< Effective, possibly raised by finalize()
+  float coverageRequested;   ///< What the sketch or config actually asked for
+  uint16_t pupilColor;       ///< Pupil colour, native-endian RGB565
+  uint16_t backColor;        ///< Back-of-eye colour, seen at extreme gaze
+  uint16_t eyelidColor;      ///< Eyelid colour
+  uint16_t irisColor;        ///< Iris colour used when no texture loads
+  uint16_t scleraColor;      ///< Sclera colour used when no texture loads
+  float pupilMin;            ///< Smallest pupil as a fraction of the iris
+  float pupilMax;            ///< Largest pupil as a fraction of the iris
+  bool tracking;             ///< Upper lid follows the iris
+  float trackFactor;         ///< 1.0 minus squint; how far the lid rests down
+  uint32_t gazeMax;          ///< Longest wait between major eye movements, us
+  float irisSpin;            ///< Iris rotation in RPM, positive is clockwise
+  float scleraSpin;          ///< Sclera rotation in RPM
+  uint16_t irisStartAngle;   ///< Initial iris rotation, 0-1023 CCW
+  uint16_t scleraStartAngle; ///< Initial sclera rotation, 0-1023 CCW
+  uint16_t irisMirror;       ///< 0 or 1023; 1023 mirrors the iris texture
+  uint16_t scleraMirror;     ///< 0 or 1023; 1023 mirrors the sclera
+  bool eyelidMirror;         ///< Mirror the eyelid shape horizontally
+  int fixate;                ///< Convergence toward the face, map pixels
+  char irisFile[EYES_PATH_MAX];   ///< Iris texture path on the drive
   char scleraFile[EYES_PATH_MAX]; ///< Sclera texture path on the drive
   char upperFile[EYES_PATH_MAX];  ///< Upper eyelid bitmap path
   char lowerFile[EYES_PATH_MAX];  ///< Lower eyelid bitmap path
@@ -664,21 +664,21 @@ private:
     return _swapBytes ? (uint16_t)__builtin_bswap16(v) : v;
   }
 
-  Eyes_Display *_display;   ///< Backend in use
-  bool _ownsDisplay;        ///< true if we constructed it and must delete it
-  bool _isTft;              ///< Backend is the Adafruit_GFX TFT path
-  uint8_t _numEyes;         ///< Eyes being drawn
-  bool _swapBytes;          ///< Backend wants big-endian pixels
-  bool _begun;              ///< begin() has succeeded
-  const char *_error;       ///< Last failure, or NULL
+  Eyes_Display *_display; ///< Backend in use
+  bool _ownsDisplay;      ///< true if we constructed it and must delete it
+  bool _isTft;            ///< Backend is the Adafruit_GFX TFT path
+  uint8_t _numEyes;       ///< Eyes being drawn
+  bool _swapBytes;        ///< Backend wants big-endian pixels
+  bool _begun;            ///< begin() has succeeded
+  const char *_error;     ///< Last failure, or NULL
 
-  EyesSettings _settings;                        ///< Live settings
-  EyesVariant _variant[MONSTER_EYES_MAX_EYES];   ///< Per-eye overrides
-  EyeState _eye[MONSTER_EYES_MAX_EYES];          ///< Per-eye animation state
+  EyesSettings _settings;                      ///< Live settings
+  EyesVariant _variant[MONSTER_EYES_MAX_EYES]; ///< Per-eye overrides
+  EyeState _eye[MONSTER_EYES_MAX_EYES];        ///< Per-eye animation state
 
   // Geometry
-  int _size;        ///< Rendered eye size in pixels
-  int _half;        ///< _size / 2
+  int _size;         ///< Rendered eye size in pixels
+  int _half;         ///< _size / 2
   float _gazeRadius; ///< Gaze travel radius in map pixels
 
   // Tables
@@ -689,28 +689,28 @@ private:
   int _mapDiameter;     ///< Twice _mapRadius, for bounds checks
 
   // Media
-  uint8_t *_lidBlock;         ///< One allocation holding all four lid tables
-  uint8_t *_upperOpen;        ///< Upper lid per column, fully open
-  uint8_t *_upperClosed;      ///< Upper lid per column, fully shut
-  uint8_t *_lowerOpen;        ///< Lower lid per column, fully open
-  uint8_t *_lowerClosed;      ///< Lower lid per column, fully shut
-  const uint16_t *_irisData;  ///< Iris texture, or a 1x1 solid colour
+  uint8_t *_lidBlock;          ///< One allocation holding all four lid tables
+  uint8_t *_upperOpen;         ///< Upper lid per column, fully open
+  uint8_t *_upperClosed;       ///< Upper lid per column, fully shut
+  uint8_t *_lowerOpen;         ///< Lower lid per column, fully open
+  uint8_t *_lowerClosed;       ///< Lower lid per column, fully shut
+  const uint16_t *_irisData;   ///< Iris texture, or a 1x1 solid colour
   const uint16_t *_scleraData; ///< Sclera texture, or a 1x1 solid colour
-  uint16_t _irisW;            ///< Iris texture width
-  uint16_t _irisH;            ///< Iris texture height
-  uint16_t _scleraW;          ///< Sclera texture width
-  uint16_t _scleraH;          ///< Sclera texture height
-  uint16_t _irisSolid;        ///< 1x1 fallback storage
-  uint16_t _scleraSolid;      ///< 1x1 fallback storage
-  bool _irisFromFile;         ///< A texture loaded, so colour setters cannot
-  bool _scleraFromFile;       ///< A texture loaded, so colour setters cannot
+  uint16_t _irisW;             ///< Iris texture width
+  uint16_t _irisH;             ///< Iris texture height
+  uint16_t _scleraW;           ///< Sclera texture width
+  uint16_t _scleraH;           ///< Sclera texture height
+  uint16_t _irisSolid;         ///< 1x1 fallback storage
+  uint16_t _scleraSolid;       ///< 1x1 fallback storage
+  bool _irisFromFile;          ///< A texture loaded, so colour setters cannot
+  bool _scleraFromFile;        ///< A texture loaded, so colour setters cannot
 
   // Shared animation state
-  bool _eyeInMotion;         ///< Mid-saccade
-  float _eyeOldX;            ///< Saccade start, map space
-  float _eyeOldY;            ///< Saccade start, map space
-  float _eyeNewX;            ///< Saccade target, map space
-  float _eyeNewY;            ///< Saccade target, map space
+  bool _eyeInMotion;          ///< Mid-saccade
+  float _eyeOldX;             ///< Saccade start, map space
+  float _eyeOldY;             ///< Saccade start, map space
+  float _eyeNewX;             ///< Saccade target, map space
+  float _eyeNewY;             ///< Saccade target, map space
   uint32_t _eyeMoveStartTime; ///< When the current move began
   int32_t _eyeMoveDuration;   ///< How long it lasts
   uint32_t _lastSaccadeStop;  ///< When the last full saccade ended
@@ -721,20 +721,20 @@ private:
   float _frameEyeY;           ///< This frame's gaze, map space
 
   // Autonomous iris scaling by fractal subdivision
-  float _irisPrev[7];   ///< Previous value per subdivision level
-  float _irisNext[7];   ///< Next value per subdivision level
-  uint16_t _irisFrame;  ///< Position in the subdivision cycle
-  float _irisValue;     ///< Current iris fraction
-  float _irisMin;       ///< Smallest iris fraction
-  float _irisRange;     ///< Span of iris fractions
+  float _irisPrev[7];  ///< Previous value per subdivision level
+  float _irisNext[7];  ///< Next value per subdivision level
+  uint16_t _irisFrame; ///< Position in the subdivision cycle
+  float _irisValue;    ///< Current iris fraction
+  float _irisMin;      ///< Smallest iris fraction
+  float _irisRange;    ///< Span of iris fractions
 
   // External control
-  bool _gazeExternal;  ///< Something else owns the gaze
-  bool _pupilExternal; ///< Something else owns the pupil
-  bool _blinkExternal; ///< Something else owns the lids
-  bool _autoBlink;     ///< Blink spontaneously
-  bool _autoGaze;      ///< Look around spontaneously
-  float _blinkForced;  ///< Phase to hold when _blinkExternal
+  bool _gazeExternal;   ///< Something else owns the gaze
+  bool _pupilExternal;  ///< Something else owns the pupil
+  bool _blinkExternal;  ///< Something else owns the lids
+  bool _autoBlink;      ///< Blink spontaneously
+  bool _autoGaze;       ///< Look around spontaneously
+  float _blinkForced;   ///< Phase to hold when _blinkExternal
   int32_t _clockOffset; ///< Added to millis() for rotation
 
   // Options
@@ -749,10 +749,10 @@ private:
   bool _profile;           ///< Time transfers
 
   // Profiling
-  uint32_t _frames;          ///< Frames since the last frameRate()
-  uint32_t _lastRateReport;  ///< micros() at the last frameRate()
-  float _lastRenderMs;       ///< Render time, last frame
-  float _lastTransferMs;     ///< Transfer time, last frame
+  uint32_t _frames;         ///< Frames since the last frameRate()
+  uint32_t _lastRateReport; ///< micros() at the last frameRate()
+  float _lastRenderMs;      ///< Render time, last frame
+  float _lastTransferMs;    ///< Transfer time, last frame
 };
 
 #endif // _ADAFRUIT_MONSTER_EYES_H_

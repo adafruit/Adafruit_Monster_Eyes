@@ -84,8 +84,8 @@ static Adafruit_FlashTransport_SPI flashTransport(EXTERNAL_FLASH_USE_CS,
 #endif
 
 static Adafruit_SPIFlash flash(&flashTransport); ///< Flash chip driver
-static FatVolume fatfs;         ///< FAT volume holding config.eye and bitmaps
-static bool fsMounted = false;  ///< Is the volume currently readable?
+static FatVolume fatfs;        ///< FAT volume holding config.eye and bitmaps
+static bool fsMounted = false; ///< Is the volume currently readable?
 
 // ===========================================================================
 //  1. BMP LOADING
@@ -565,8 +565,7 @@ void Adafruit_Monster_Eyes::applyConfigRoot(const void *variantPtr) {
   if (v.is<int>())
     _settings.scleraStartAngle = 1023 - (v.as<int>() & 1023);
   else if (v.is<float>())
-    _settings.scleraStartAngle =
-        1023 - ((int)(v.as<float>() * 1024.0f) & 1023);
+    _settings.scleraStartAngle = 1023 - ((int)(v.as<float>() * 1024.0f) & 1023);
 
   v = o["irisMirror"];
   if (v.is<bool>() || v.is<int>())
@@ -722,8 +721,8 @@ bool Adafruit_Monster_Eyes::mediaLoad(int size, uint32_t texBudget) {
     if (jobs[i].path && jobs[i].path[0] && (jobs[i].budget > 512)) {
       FileBmpReader r(jobs[i].path);
       uint16_t *loaded = NULL;
-      if (r.ok() && bmpLoadTexture(r, &loaded, jobs[i].w, jobs[i].h,
-                                   jobs[i].budget)) {
+      if (r.ok() &&
+          bmpLoadTexture(r, &loaded, jobs[i].w, jobs[i].h, jobs[i].budget)) {
         if (_swapBytes) {
           // Swap once here so the render loop never has to, and so the bytes
           // are already wire-ready for a DMA.

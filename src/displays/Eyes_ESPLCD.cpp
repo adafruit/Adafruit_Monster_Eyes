@@ -135,8 +135,8 @@ void Eyes_ESPLCD::sendVendorInit(void *io) {
   while ((cmd = *p++) != 0x00) {
     const uint8_t x = *p++;
     const uint8_t n = x & 0x7F;
-    esp_lcd_panel_io_tx_param((esp_lcd_panel_io_handle_t)io, cmd,
-                              n ? p : NULL, n);
+    esp_lcd_panel_io_tx_param((esp_lcd_panel_io_handle_t)io, cmd, n ? p : NULL,
+                              n);
     p += n;
     if (x & 0x80)
       delay(150);
@@ -266,8 +266,8 @@ void Eyes_ESPLCD::clear(uint16_t color) {
 }
 
 void Eyes_ESPLCD::flushStripe(int eye, int x0, int width, uint16_t *buf) {
-  esp_lcd_panel_draw_bitmap((esp_lcd_panel_handle_t)_panel[eye],
-                            _originX + x0, _originY, _originX + x0 + width,
+  esp_lcd_panel_draw_bitmap((esp_lcd_panel_handle_t)_panel[eye], _originX + x0,
+                            _originY, _originX + x0 + width,
                             _originY + _eyeSize, buf);
   s_pending[eye]++;
   // One transfer may stay in flight; the base class has already flipped to the

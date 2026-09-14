@@ -30,8 +30,8 @@ Eyes_SyncPrimary::Eyes_SyncPrimary(Adafruit_Monster_Eyes &eyes, TwoWire &wire,
 bool Eyes_SyncPrimary::begin(uint32_t hz) {
   _wire.begin(); // Controller
   _wire.setClock(hz);
-  EYES_DBG("sync: PRIMARY writing to I2C 0x%02X at %lu Hz, clk %lu Hz\n",
-           _addr, (unsigned long)hz, (unsigned long)eyesCpuHz());
+  EYES_DBG("sync: PRIMARY writing to I2C 0x%02X at %lu Hz, clk %lu Hz\n", _addr,
+           (unsigned long)hz, (unsigned long)eyesCpuHz());
   EYES_DBG("sync: drawing the %s eye\n", _eyes.side() ? "RIGHT" : "LEFT");
   return true;
 }

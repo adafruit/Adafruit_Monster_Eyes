@@ -84,8 +84,8 @@ private:
   bool _dma;                                      ///< DMA requested
 #if defined(ARDUINO_ARCH_RP2040)
   void dmaSettle(int eye);
-  void *_spiInst[MONSTER_EYES_MAX_EYES]; ///< spi_inst_t*, kept opaque here
-  int _dmaCh[MONSTER_EYES_MAX_EYES];     ///< DMA channel, or -1
+  void *_spiInst[MONSTER_EYES_MAX_EYES];  ///< spi_inst_t*, kept opaque here
+  int _dmaCh[MONSTER_EYES_MAX_EYES];      ///< DMA channel, or -1
   bool _dmaActive[MONSTER_EYES_MAX_EYES]; ///< A transfer is in flight
 #endif
 };

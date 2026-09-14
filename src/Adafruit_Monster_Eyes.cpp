@@ -84,9 +84,9 @@ Adafruit_Monster_Eyes::~Adafruit_Monster_Eyes() {
 void Adafruit_Monster_Eyes::applyDefaults(void) {
   memset(&_settings, 0, sizeof(_settings));
 
-  _settings.displaySize = 0; // Fill whatever the display can give one eye
-  _settings.eyeRadius = 0;   // Derive from displaySize
-  _settings.irisRadius = 0;  // Derive from displaySize
+  _settings.displaySize = 0;     // Fill whatever the display can give one eye
+  _settings.eyeRadius = 0;       // Derive from displaySize
+  _settings.irisRadius = 0;      // Derive from displaySize
   _settings.slitPupilRadius = 0; // Round pupil
   _settings.coverage = 0.6f;
   _settings.coverageRequested = _settings.coverage;
@@ -248,8 +248,7 @@ void Adafruit_Monster_Eyes::finalizeSettings(void) {
   // A mismatch between these is what lets the iris wander out of frame, so
   // leaving them at 0 / -1 is the safest way to resize the eye.
   if (_settings.irisRadius <= 0)
-    _settings.irisRadius =
-        (int)(0.4583f * (float)_settings.displaySize + 0.5f);
+    _settings.irisRadius = (int)(0.4583f * (float)_settings.displaySize + 0.5f);
   else
     _settings.irisRadius = abs(_settings.irisRadius);
   // screen2map() takes sqrt(eyeRadius^2 - irisRadius^2); keep it real.
@@ -398,9 +397,9 @@ void Adafruit_Monster_Eyes::setScleraSpin(float rpm, int eye) {
 // rotation. Both tables cover ONE QUADRANT and are mirrored at render time.
 
 float Adafruit_Monster_Eyes::screen2map(int in) const {
-  return atan2f((float)in, sqrtf((float)(_settings.eyeRadius *
-                                             _settings.eyeRadius -
-                                         in * in))) /
+  return atan2f((float)in,
+                sqrtf((float)(_settings.eyeRadius * _settings.eyeRadius -
+                              in * in))) /
          (float)M_PI_2 * (float)_mapRadius;
 }
 
@@ -415,8 +414,7 @@ bool Adafruit_Monster_Eyes::calcDisplacement(void) {
   if (!_displace)
     return false;
 
-  const float eyeRadius2 =
-      (float)(_settings.eyeRadius * _settings.eyeRadius);
+  const float eyeRadius2 = (float)(_settings.eyeRadius * _settings.eyeRadius);
   uint8_t *ptr = _displace;
 
   // First quadrant only, "+Y is up". Pixel centres at +0.5 by design; that
@@ -526,9 +524,9 @@ void Adafruit_Monster_Eyes::tablesFree(void) {
 
 bool Adafruit_Monster_Eyes::tablesInit(void) {
   tablesFree();
-  _mapRadius = (int)((float)_settings.eyeRadius * (float)M_PI *
-                         _settings.coverage +
-                     0.5f);
+  _mapRadius =
+      (int)((float)_settings.eyeRadius * (float)M_PI * _settings.coverage +
+            0.5f);
   _mapDiameter = _mapRadius * 2;
   if (_mapRadius < 8)
     return false;
@@ -630,8 +628,8 @@ bool Adafruit_Monster_Eyes::begin(void) {
   }
   _swapBytes = _display->bigEndian();
   _display->setProfile(_profile);
-  EYES_DBG("Display ready, max eye %d. Free heap: %u\n",
-           _display->maxEyeSize(), (unsigned)eyesFreeHeap());
+  EYES_DBG("Display ready, max eye %d. Free heap: %u\n", _display->maxEyeSize(),
+           (unsigned)eyesFreeHeap());
 
   // Clamp to what the backend can actually give one eye. With two eyes on a
   // single framebuffer that is half the width, so a config asking for more
