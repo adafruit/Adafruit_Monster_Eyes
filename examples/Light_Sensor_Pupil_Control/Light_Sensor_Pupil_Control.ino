@@ -45,9 +45,6 @@ Adafruit_Monster_Eyes eyes(&panel0);
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial) {
-    delay(10);
-  }
   // eyes.setVerbose(Serial); // debug
 
 #if defined(ARDUINO_ARCH_ESP32)
