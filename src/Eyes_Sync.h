@@ -11,7 +11,7 @@
  * I2C controller and writes packets to the secondary's address.
  *
  * WHAT IS SENT: gaze target, pupil dilation, blink phase, and the primary's
- * clock so iris rotation stays in step. 
+ * clock so iris rotation stays in step.
  *
  * call begin() on the eyes FIRST. PicoDVI raises the system
  * clock when it starts, and Wire's clock divider is fixed from the peripheral
