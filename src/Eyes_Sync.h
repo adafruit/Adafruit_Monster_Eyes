@@ -2,25 +2,33 @@
  * @file Eyes_Sync.h
  * @brief Keep two boards, one eye each, animating in step over I2C.
  *
- * Works with ANY display backend: these classes only drive the public control
- * API, exactly as a sketch reading a sensor would. Build both boards with a
- * single eye and give them the same config and assets. The primary animates
- * and broadcasts; the secondary renders what it is sent.
+ * Works with any display backend: these classes only drive the public control
+ * API. Build both boards with a single eye and give them the same config and
+ * assets. The primary animates and broadcasts; the secondary renders what
+ * it is sent.
  *
- * WIRING: one STEMMA QT cable between the two boards, which uses the default
- * Wire pins. The primary is the I2C controller and writes packets to the
- * secondary's address.
+ * WIRING: one STEMMA QT cable between the two boards. The primary is the
+ * I2C controller and writes packets to the secondary's address.
  *
  * WHAT IS SENT: gaze target, pupil dilation, blink phase, and the primary's
- * clock so iris rotation stays in step. Everything else stays local, which
- * leaves each board its own spin direction and start angle.
+ * clock so iris rotation stays in step. 
  *
- * If packets stop arriving the secondary hands control back to its own
- * animators rather than freezing, so a pulled cable leaves a working eye.
- *
- * ORDER MATTERS: call begin() on the eyes FIRST. PicoDVI raises the system
+ * call begin() on the eyes FIRST. PicoDVI raises the system
  * clock when it starts, and Wire's clock divider is fixed from the peripheral
  * clock at begin() time.
+ *
+ * for Qualia, whose PCA9554A expander sits at 0x3F, the display has to be
+ * brought up while Wire is still a controller.
+ *
+ * That second case needs one extra step for a SECONDARY, because one I2C
+ * controller cannot be both a controller and a peripheral: bring the display
+ * up, then release the bus before begin() here.
+ *
+ *     eyes.begin();
+ *     // ...anything else that needs the expander, e.g. the backlight
+ *     Wire.end();
+ *     eyeSync.begin();
+ *
  */
 
 #ifndef _EYES_SYNC_H_
@@ -31,6 +39,10 @@
 
 #define EYES_SYNC_MAGIC 0xA5 ///< First byte of a sync packet
 
+// Spelled as a macro so doxygen can be told to expand it to nothing; it
+// cannot parse a bare attribute on a struct.
+#define EYES_PACKED __attribute__((packed)) ///< No padding between fields
+
 /**
  * @brief State the two boards must agree on, sent once per frame.
  *
@@ -38,7 +50,7 @@
  * rotation is derived from time rather than sent, so carrying the clock keeps
  * both eyes spinning in step.
  */
-struct __attribute__((packed)) EyesSyncPacket {
+struct EyesSyncPacket {
   uint8_t magic; ///< Frame marker, EYES_SYNC_MAGIC
   int16_t eyeX;  ///< Gaze target in map pixels
   int16_t eyeY;  ///< Gaze target in map pixels
@@ -46,7 +58,7 @@ struct __attribute__((packed)) EyesSyncPacket {
   uint8_t blink; ///< Blink phase, 0 open to 255 shut
   uint32_t ms;   ///< Primary's millis(), so iris rotation stays in step
   uint8_t sum;   ///< XOR of every preceding byte
-};
+} EYES_PACKED;
 
 /**
  * @brief Broadcasts this board's animation state to a secondary.

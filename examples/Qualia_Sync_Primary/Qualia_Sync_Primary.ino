@@ -1,15 +1,23 @@
-// Adafruit Monster Eyes -- one eye on an Adafruit Qualia ESP32-S3.
+// Adafruit Monster Eyes -- primary for Qualia ESP32-S3 sync
 //
-// Eye appearance comes from config.eye and BMP files on the CIRCUITPY drive.
+// Upload Qualia_Sync_Primary to one board and Qualia_Sync_Secondary to the
+// other, with the same config.eye and assets on both. 
+//
+// WIRING: one STEMMA QT cable between the two boards or connect SDA to SDA, SCL to SCL
+// ----------- IMPORTANT NOTE ON I2C -----------
+// The Qualia inits a display with the onboard I2C GPIO expander. Because of this, the
+// two boards CANNOT have the same IO expander address and be connected on boot. You either
+// need to change one of the onboard jumpers or have the boards fully boot and then
+// connect the STEMMA QT cable.
 
 #include <Adafruit_Monster_Eyes.h>
 #include <Arduino_GFX_Library.h>
+#include <Eyes_Sync.h>
 
 #define RGB_W 480
 #define RGB_H 480
-#define EYE_SCALE 2
+#define EYE_SCALE 2 // Panel pixels per rendered pixel
 
-// 2.1" round display
 Arduino_XCA9554SWSPI expander(PCA_TFT_RESET, PCA_TFT_CS, PCA_TFT_SCK,
                               PCA_TFT_MOSI, &Wire, 0x3F);
 
@@ -43,6 +51,8 @@ Arduino_RGB_Display gfx(
 
 Adafruit_Monster_Eyes eyes(&gfx, EYE_SCALE);
 
+Eyes_SyncPrimary eyeSync(eyes); // Defaults: Wire, address 0x42, right eye
+
 void setup() {
   Serial.begin(115200);
   eyes.setVerbose(Serial);
@@ -54,17 +64,22 @@ void setup() {
     while (1)
       delay(1000);
   }
-
   expander.pinMode(PCA_TFT_BACKLIGHT, OUTPUT);
   expander.digitalWrite(PCA_TFT_BACKLIGHT, HIGH);
+
+  eyeSync.begin();
 }
 
 void loop() {
   eyes.animate();
+  eyeSync.send();
 
   static uint32_t last = 0;
   if (millis() - last >= 1000) {
     last = millis();
     Serial.printf("%.0f fps\n", eyes.frameRate());
+    Serial.printf("sync: sent %lu, failed %lu\n", eyeSync.sent(),
+                  eyeSync.failed());
+    eyeSync.resetCounts();
   }
 }
