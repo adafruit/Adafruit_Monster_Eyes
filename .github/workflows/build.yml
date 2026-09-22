@@ -1,4 +1,4 @@
-name: build
+name: Arduino Library CI
 
 # One artifact per board / panel / eye-count combination on release
 # CI tests for feather rp2040, feather esp32s3, picodvi and qualia
