@@ -62,6 +62,12 @@ jobs:
       - name: pre-install
         run: bash ci/actions_install.sh
 
+      - name: Patch ci-arduino UF2 detection
+        run: |
+          sed -i 's/if not any (x in fqbn for x in \["esp32s2", "esp32s3"\]):/if not fqbn.startswith("esp32:"):/' \
+            ci/build_platform.py
+          grep -n 'fqbn.startswith("esp32:")' ci/build_platform.py
+
       - name: build
         run: python3 ci/build_platform.py ${{ matrix.platform }}
 
