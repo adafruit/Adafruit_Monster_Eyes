@@ -10,7 +10,7 @@ on:
     types: [published]
 
 jobs:
-  # Pushes build a four, releases build all
+  # Pushes build a four, releases
   platforms:
     runs-on: ubuntu-latest
     outputs:
@@ -38,11 +38,6 @@ jobs:
   build:
     needs: platforms
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    env:
-      PUBLISH: ${{ github.event_name == 'release' ||
-        github.event_name == 'workflow_dispatch' }}
     strategy:
       fail-fast: false
       matrix:
@@ -62,39 +57,8 @@ jobs:
       - name: pre-install
         run: bash ci/actions_install.sh
 
-      - name: Patch ci-arduino UF2 detection
-        run: |
-          sed -i 's/if not any (x in fqbn for x in \["esp32s2", "esp32s3"\]):/if not fqbn.startswith("esp32:"):/' \
-            ci/build_platform.py
-          grep -n 'fqbn.startswith("esp32:")' ci/build_platform.py
-
       - name: build
         run: python3 ci/build_platform.py ${{ matrix.platform }}
-
-      - name: Collect the UF2s
-        if: env.PUBLISH == 'true'
-        run: |
-          set -e
-          mkdir -p "dist/${{ matrix.platform }}"
-          found=0
-          for f in examples/*/build/*/*.uf2; do
-            [ -e "$f" ] || continue
-            ex=$(echo "$f" | cut -d/ -f2)
-            cp "$f" "dist/${{ matrix.platform }}/$ex.uf2"
-            found=1
-          done
-          if [ "$found" = "0" ]; then
-            echo "No UF2s for ${{ matrix.platform }} -- is a .generate marker missing?" >&2
-            exit 1
-          fi
-          ls -l "dist/${{ matrix.platform }}"
-
-      - uses: actions/upload-artifact@v4
-        if: env.PUBLISH == 'true'
-        with:
-          name: uf2-${{ matrix.platform }}
-          path: dist/*
-          if-no-files-found: error
 
   docs:
     runs-on: ubuntu-latest
@@ -116,43 +80,3 @@ jobs:
           GH_REPO_TOKEN: ${{ secrets.GH_REPO_TOKEN }}
           PRETTYNAME: "Adafruit Monster Eyes"
         run: bash ci/doxy_gen_and_deploy.sh
-
-  # One zip per board
-  bundle:
-    needs: build
-    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          path: incoming
-          pattern: uf2-*
-          merge-multiple: true
-
-      - name: Zip each board
-        run: |
-          set -e
-          mkdir -p out
-          for d in incoming/*/; do
-            b=$(basename "$d")
-            (cd incoming && zip -r "../out/$b.zip" "$b")
-          done
-          echo "== assembled =="
-          for z in out/*.zip; do
-            echo "--- $z"
-            unzip -l "$z" | sed -n '4,30p'
-          done
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: firmware
-          path: out/*.zip
-          if-no-files-found: error
-
-      - name: Attach to the release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: out/*.zip
