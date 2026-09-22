@@ -15,9 +15,16 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       list: ${{ steps.pick.outputs.list }}
+      publish: ${{ steps.pick.outputs.publish }}
     steps:
       - id: pick
         run: |
+          # TEMPORARY: to exercise the UF2 path on a pull request, put one
+          # platform name here. That board alone is built, and its UF2s are
+          # collected and uploaded as if this were a release. Set it back to ""
+          # once you have seen it work.
+          ONE_BOARD="qualia_s3_rgb666"
+
           # Platform names come from adafruit/ci-arduino's all_platforms.py
           # The _tinyusb variants are required
           FULL='["feather_rp2040_tinyusb","metro_rp2040_tinyusb",
@@ -27,13 +34,19 @@ jobs:
                  "pico_rp2040_tinyusb","qualia_s3_rgb666"]'
           PR_CI='["feather_rp2040_tinyusb","feather_esp32s3",
                   "pico_rp2040_tinyusb","qualia_s3_rgb666"]'
-          if [ "${{ github.event_name }}" = "release" ] || \
-             [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [ -n "$ONE_BOARD" ]; then
+            LIST="[\"$ONE_BOARD\"]"
+            PUB=true
+          elif [ "${{ github.event_name }}" = "release" ] || \
+               [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             LIST="$FULL"
+            PUB=true
           else
             LIST="$PR_CI"
+            PUB=false
           fi
           echo "list=$(echo "$LIST" | tr -d ' \n')" >> "$GITHUB_OUTPUT"
+          echo "publish=$PUB" >> "$GITHUB_OUTPUT"
 
   build:
     needs: platforms
@@ -41,8 +54,7 @@ jobs:
     permissions:
       contents: write
     env:
-      PUBLISH: ${{ github.event_name == 'release' ||
-        github.event_name == 'workflow_dispatch' }}
+      PUBLISH: ${{ needs.platforms.outputs.publish }}
     strategy:
       fail-fast: false
       matrix:
