@@ -5,7 +5,8 @@
 
 #include "Eyes_RGB666.h"
 
-#if defined(ARDUINO_ARCH_ESP32)
+#if defined(ARDUINO_ARCH_ESP32) &&                                             \
+    (CONFIG_IDF_TARGET_ESP32S3 || CONFIG_IDF_TARGET_ESP32P4)
 
 // Confined to this translation unit on purpose. Arduino_GFX defines bare colour
 // names (BLACK, WHITE, RED...) that would otherwise collide with anything else
@@ -122,4 +123,4 @@ void Eyes_RGB666::selfTest(void) {
   delay(1200);
 }
 
-#endif // ARDUINO_ARCH_ESP32
+#endif // ESP32-S3 / ESP32-P4

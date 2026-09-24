@@ -14,9 +14,10 @@
 #ifndef _EYES_RGB666_H_
 #define _EYES_RGB666_H_
 
-#if defined(ARDUINO_ARCH_ESP32)
-
 #include "../Eyes_Display.h"
+
+#if defined(ARDUINO_ARCH_ESP32) &&                                             \
+    (CONFIG_IDF_TARGET_ESP32S3 || CONFIG_IDF_TARGET_ESP32P4)
 
 class Arduino_RGB_Display; ///< Forward declared; sketch includes Arduino_GFX
 
@@ -42,6 +43,7 @@ public:
    *              240 eye, 3 a 720 panel.
    */
   Eyes_RGB666(Arduino_RGB_Display *gfx, uint8_t scale = 2);
+  /** @brief Destructor; releases the blit buffer. */
   ~Eyes_RGB666();
 
   bool begin(void) override;
@@ -59,5 +61,5 @@ private:
   size_t _blitPixels;        ///< Capacity of _blitbuf
 };
 
-#endif // ARDUINO_ARCH_ESP32
+#endif // ESP32-S3 / ESP32-P4
 #endif // _EYES_RGB666_H_

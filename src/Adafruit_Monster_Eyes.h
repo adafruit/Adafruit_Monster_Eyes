@@ -41,10 +41,20 @@
 
 #include "Eyes_Display.h"
 #include "Eyes_Platform.h"
+
+#include <Adafruit_SPIFlash.h>
+#include <Adafruit_TinyUSB.h>
+#include <SdFat_Adafruit_Fork.h>
+#ifndef ARDUINOJSON_ENABLE_COMMENTS
+/** Let config.eye carry // comments. Documented above the line, not after it.
+ */
+#define ARDUINOJSON_ENABLE_COMMENTS 1
+#endif
 #include "displays/Eyes_DVI.h"
 #include "displays/Eyes_ESPLCD.h"
 #include "displays/Eyes_RGB666.h"
 #include "displays/Eyes_TFT.h"
+#include <ArduinoJson.h>
 
 #define EYES_PATH_MAX 64 ///< Longest asset path accepted from a config file
 
@@ -107,6 +117,7 @@ struct EyesVariant {
  */
 class BmpReader {
 public:
+  /** @brief Destructor. */
   virtual ~BmpReader() {}
   /**
    * @brief Move to an absolute byte offset.
@@ -160,9 +171,13 @@ public:
   Adafruit_Monster_Eyes(DVIGFX16 *dvi, uint8_t numEyes = 2);
 #endif
 
-#if defined(ARDUINO_ARCH_ESP32)
+#if defined(ARDUINO_ARCH_ESP32) &&                                             \
+    (CONFIG_IDF_TARGET_ESP32S3 || CONFIG_IDF_TARGET_ESP32P4)
   /**
    * @brief Drive a parallel RGB666 panel. Do not call the object's begin().
+   *
+   * Only on parts with an RGB LCD peripheral, since that is where Arduino_GFX
+   * defines Arduino_RGB_Display.
    * @param gfx   Arduino_GFX display from the sketch.
    * @param scale Panel pixels per rendered pixel; 2 for a 480 panel, 3 for 720.
    */
@@ -175,6 +190,7 @@ public:
    */
   Adafruit_Monster_Eyes(Eyes_Display *display);
 
+  /** @brief Destructor; frees the tables, eyelids and textures. */
   ~Adafruit_Monster_Eyes();
   ///@}
 
