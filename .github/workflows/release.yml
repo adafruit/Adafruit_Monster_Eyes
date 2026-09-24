@@ -1,0 +1,228 @@
+name: Release UF2s
+
+# Builds a UF2 for every example on every board it declares, and attaches one
+# zip per board to the release.
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'One platform name from ci-arduino, or "all"'
+        default: all
+        required: false
+        type: string
+  release:
+    types: [published]
+
+jobs:
+  platforms:
+    runs-on: ubuntu-latest
+    outputs:
+      list: ${{ steps.pick.outputs.list }}
+    steps:
+      - id: pick
+        run: |
+          ALL='["feather_rp2040_tinyusb","metro_rp2040_tinyusb",
+                "feather_rp2350_tinyusb","metro_rp2350_tinyusb",
+                "feather_esp32s2","feather_esp32s3","metro_esp32s3",
+                "qtpy_esp32s2","feather_rp2040_dvi_tinyusb",
+                "pico_rp2040_tinyusb","qualia_s3_rgb666"]'
+          # Empty on a release event, so that path always builds everything.
+          IN="${{ github.event.inputs.platform }}"
+          if [ -z "$IN" ] || [ "$IN" = "all" ]; then
+            LIST="$ALL"
+          else
+            LIST="[\"$IN\"]"
+          fi
+          echo "list=$(echo "$LIST" | tr -d ' \n')" >> "$GITHUB_OUTPUT"
+          cat "$GITHUB_OUTPUT"
+
+  build:
+    needs: platforms
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ${{ fromJSON(needs.platforms.outputs.list) }}
+
+    name: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: adafruit/ci-arduino
+          path: ci
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - uses: arduino/setup-arduino-cli@v2
+
+      # FQBN and UF2 family come from ci-arduino's board table
+      - name: Resolve the board
+        id: board
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import sys
+          sys.path.insert(0, "ci")
+          from all_platforms import ALL_PLATFORMS
+          p = "${{ matrix.platform }}"
+          if p not in ALL_PLATFORMS:
+              sys.exit(f"{p} is not in ci-arduino's all_platforms.py")
+          fqbn = ALL_PLATFORMS[p][0]
+          family = ALL_PLATFORMS[p][1] or ""
+          print(f"fqbn={fqbn}")
+          print(f"core={':'.join(fqbn.split(':')[:2])}")
+          print(f"family={family}")
+          PY
+          cat "$GITHUB_OUTPUT"
+
+      - name: Install the core
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls \
+            https://github.com/earlephilhower/arduino-pico/releases/download/global/package_rp2040_index.json
+          arduino-cli config add board_manager.additional_urls \
+            https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install "${{ steps.board.outputs.core }}"
+
+      # Dependencies come from library.properties
+      - name: Install the libraries
+        run: |
+          DEPS=$(grep '^depends=' library.properties | cut -d= -f2-)
+          IFS=',' read -ra ARR <<< "$DEPS"
+          for d in "${ARR[@]}"; do
+            d="$(echo "$d" | sed 's/^ *//;s/ *$//')"
+            [ -n "$d" ] || continue
+            echo "installing $d"
+            arduino-cli lib install "$d" > /dev/null
+          done
+          # The library under test: examples include it by name, so it has to
+          # be on the library path rather than compiled out of the checkout.
+          mkdir -p "$HOME/Arduino/libraries"
+          ln -s "$GITHUB_WORKSPACE" \
+            "$HOME/Arduino/libraries/Adafruit_Monster_Eyes"
+
+      - name: Build the UF2s
+        run: |
+          set -e
+          P="${{ matrix.platform }}"
+          FQBN="${{ steps.board.outputs.fqbn }}"
+          FAMILY="${{ steps.board.outputs.family }}"
+          mkdir -p "dist/$P"
+          built=0
+
+          for d in examples/*/; do
+            ex=$(basename "$d")
+
+            # Same selection rules as ci-arduino's build_platform.py, in the
+            # same order, so the two workflows cannot disagree:
+            #   1. .<platform>.test.skip     -> skip
+            #   2. .skip.txt names it        -> skip
+            #   3. any .*.test.only present  -> build only if ours is there
+            #   4. otherwise                 -> build
+            if [ -f "$d/.$P.test.skip" ]; then
+              echo "  $ex: skipped (.test.skip)"
+              continue
+            fi
+            if [ -f "$d/.skip.txt" ] && grep -qx "$P" "$d/.skip.txt"; then
+              echo "  $ex: skipped (.skip.txt)"
+              continue
+            fi
+            if ls "$d"/.*.test.only >/dev/null 2>&1 &&
+               [ ! -f "$d/.$P.test.only" ]; then
+              echo "  $ex: skipped (allowlisted to other platforms)"
+              continue
+            fi
+
+            echo "::group::$ex"
+            arduino-cli compile \
+              --fqbn "$FQBN" \
+              --output-dir "build/$ex" \
+              --warnings default \
+              "$d"
+
+            if ls "build/$ex"/*.uf2 >/dev/null 2>&1; then
+              # RP2 emits a .uf2 itself.
+              cp "build/$ex"/*.uf2 "dist/$P/$ex.uf2"
+            elif [ -n "$FAMILY" ]; then
+              if [ ! -f uf2conv.py ]; then
+                wget -q --no-check-certificate \
+                  https://raw.githubusercontent.com/microsoft/uf2/master/utils/uf2conv.py \
+                  https://raw.githubusercontent.com/microsoft/uf2/master/utils/uf2families.json
+              fi
+              # The APP binary: the bootloader is already on the board.
+              APP=$(ls "build/$ex"/*.ino.bin 2>/dev/null | head -n 1)
+              if [ -z "$APP" ]; then
+                echo "No .uf2 and no .ino.bin for $ex" >&2
+                ls -la "build/$ex" >&2
+                exit 1
+              fi
+              python3 uf2conv.py "$APP" -c -f "$FAMILY" -b 0x0000 \
+                -o "dist/$P/$ex.uf2"
+            else
+              echo "No .uf2 produced for $ex and no UF2 family for $P" >&2
+              ls -la "build/$ex" >&2
+              exit 1
+            fi
+            built=$((built + 1))
+            echo "::endgroup::"
+          done
+
+          if [ "$built" = "0" ]; then
+            echo "::error::Every example is skipped for $P"
+            for d in examples/*/; do
+              printf '%s: ' "$(basename "$d")"
+              ls -a "$d" | grep -E '\.(test\.only|test\.skip)$' | tr '\n' ' '
+              [ -f "$d/.skip.txt" ] && printf 'skip.txt(%s)' \
+                "$(tr '\n' ' ' < "$d/.skip.txt")"
+              echo
+            done
+            exit 1
+          fi
+          echo "$built UF2s:"
+          ls -l "dist/$P"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: uf2-${{ matrix.platform }}
+          path: dist/*
+          if-no-files-found: error
+
+  # One zip per board, so a release lists a handful of named archives
+  bundle:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: incoming
+          pattern: uf2-*
+          merge-multiple: true # Each artifact already holds its board folder
+
+      - name: Zip each board
+        run: |
+          set -e
+          mkdir -p out
+          for d in incoming/*/; do
+            b=$(basename "$d")
+            (cd incoming && zip -r "../out/$b.zip" "$b")
+          done
+          echo "== assembled =="
+          for z in out/*.zip; do
+            echo "--- $z"
+            unzip -l "$z" | sed -n '4,40p'
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: out/*.zip
+          if-no-files-found: error
+
+      - name: Attach to the release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/*.zip
