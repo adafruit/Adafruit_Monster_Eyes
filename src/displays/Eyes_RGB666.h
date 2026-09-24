@@ -14,10 +14,10 @@
 #ifndef _EYES_RGB666_H_
 #define _EYES_RGB666_H_
 
+#include "../Eyes_Display.h"
+
 #if defined(ARDUINO_ARCH_ESP32) &&                                             \
     (CONFIG_IDF_TARGET_ESP32S3 || CONFIG_IDF_TARGET_ESP32P4)
-
-#include "../Eyes_Display.h"
 
 class Arduino_RGB_Display; ///< Forward declared; sketch includes Arduino_GFX
 

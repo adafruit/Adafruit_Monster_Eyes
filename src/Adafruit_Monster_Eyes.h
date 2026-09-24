@@ -42,17 +42,9 @@
 #include "Eyes_Display.h"
 #include "Eyes_Platform.h"
 
-#if defined(__has_include)
-#if __has_include(<SdFat_Adafruit_Fork.h>)
-#include <SdFat_Adafruit_Fork.h>
-#else
-#include <SdFat.h>
-#endif
-#else
-#include <SdFat.h>
-#endif
 #include <Adafruit_SPIFlash.h>
 #include <Adafruit_TinyUSB.h>
+#include <SdFat_Adafruit_Fork.h>
 #ifndef ARDUINOJSON_ENABLE_COMMENTS
 /** Let config.eye carry // comments. Documented above the line, not after it.
  */
