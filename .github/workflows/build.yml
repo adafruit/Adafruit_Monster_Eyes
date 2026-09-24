@@ -26,7 +26,8 @@ jobs:
                  "qtpy_esp32s2","feather_rp2040_dvi_tinyusb",
                  "pico_rp2040_tinyusb","qualia_s3_rgb666"]'
           PR_CI='["feather_rp2040_tinyusb","feather_esp32s3",
-                  "pico_rp2040_tinyusb","qualia_s3_rgb666"]'
+                  "pico_rp2040_tinyusb","qualia_s3_rgb666",
+                  "qtpy_esp32s2"]'
           if [ "${{ github.event_name }}" = "release" ] || \
              [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             LIST="$FULL"

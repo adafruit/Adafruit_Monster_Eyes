@@ -47,7 +47,8 @@ Adafruit_Monster_Eyes::Adafruit_Monster_Eyes(DVIGFX16 *dvi, uint8_t numEyes) {
 }
 #endif
 
-#if defined(ARDUINO_ARCH_ESP32)
+#if defined(ARDUINO_ARCH_ESP32) &&                                             \
+    (CONFIG_IDF_TARGET_ESP32S3 || CONFIG_IDF_TARGET_ESP32P4)
 Adafruit_Monster_Eyes::Adafruit_Monster_Eyes(Arduino_RGB_Display *gfx,
                                              uint8_t scale) {
   _display = new Eyes_RGB666(gfx, scale);
