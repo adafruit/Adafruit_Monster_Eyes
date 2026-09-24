@@ -54,7 +54,9 @@
 #include <Adafruit_SPIFlash.h>
 #include <Adafruit_TinyUSB.h>
 #ifndef ARDUINOJSON_ENABLE_COMMENTS
-#define ARDUINOJSON_ENABLE_COMMENTS 1 ///< Allow // comments inside config.eye
+/** Let config.eye carry // comments. Documented above the line, not after it.
+ */
+#define ARDUINOJSON_ENABLE_COMMENTS 1
 #endif
 #include "displays/Eyes_DVI.h"
 #include "displays/Eyes_ESPLCD.h"
