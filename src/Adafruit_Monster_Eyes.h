@@ -361,6 +361,21 @@ public:
    * @param on false to leave the gaze wherever it was last put.
    */
   void setAutoGaze(bool on) { _autoGaze = on; }
+
+  /**
+   * @brief Slide the whole eyeball across its window.
+   * @param dx Rightward shift in rendered pixels.
+   * @param dy Upward shift in rendered pixels.
+   */
+  void setDrawOffset(int dx, int dy) {
+    _drawOffX = dx;
+    _drawOffY = dy;
+  }
+
+  /** @brief Current horizontal draw offset. @return Rendered pixels. */
+  int drawOffsetX(void) const { return _drawOffX; }
+  /** @brief Current vertical draw offset. @return Rendered pixels. */
+  int drawOffsetY(void) const { return _drawOffY; }
   ///@}
 
   // -----------------------------------------------------------------------
@@ -777,6 +792,8 @@ private:
   bool _blinkExternal;  ///< Something else owns the lids
   bool _autoBlink;      ///< Blink spontaneously
   bool _autoGaze;       ///< Look around spontaneously
+  int _drawOffX;        ///< Whole-eye shift, rendered pixels
+  int _drawOffY;        ///< Whole-eye shift, rendered pixels
   float _blinkForced;   ///< Phase to hold when _blinkExternal
   int32_t _clockOffset; ///< Added to millis() for rotation
 
