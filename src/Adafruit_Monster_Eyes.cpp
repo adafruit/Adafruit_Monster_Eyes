@@ -142,6 +142,7 @@ void Adafruit_Monster_Eyes::applyDefaults(void) {
 
   _gazeExternal = _pupilExternal = _blinkExternal = false;
   _autoBlink = _autoGaze = true;
+  _drawOffX = _drawOffY = 0;
   _blinkForced = 0.0f;
   _clockOffset = 0;
 
@@ -1089,8 +1090,6 @@ void Adafruit_Monster_Eyes::setIrisFraction(float f) {
 }
 
 void Adafruit_Monster_Eyes::setGaze(float x, float y) {
-  // Scale into the reachable disc rather than clipping to a square, so a
-  // corner request still points as far that way as the geometry allows.
   const float d2 = x * x + y * y;
   if (d2 > 1.0f) {
     const float k = 1.0f / sqrtf(d2);
@@ -1178,15 +1177,24 @@ void Adafruit_Monster_Eyes::renderEye(uint8_t e) {
   const uint8_t *polarAngle = _polarAngle;
   const int8_t *polarDist = _polarDist;
   const int mapRadius = _mapRadius, mapDiameter = _mapDiameter;
+  const int offX = _drawOffX, offY = _drawOffY;
 
   for (int x = 0; x < size; x++) {
-    const int lidColumn = mirrorLids ? (size - 1 - x) : x;
-
     // Destination pointer starts at the TOP of the column and walks up-screen
     // as y increases.
     uint16_t *dst = _display->column(e, x);
     if (!dst)
       return;
+
+    const int sx = x - offX;
+    if ((sx < 0) || (sx >= size)) {
+      for (int yb = 0; yb < size; yb++, dst += stride)
+        *dst = eyelidColor;
+      _display->columnDone(e, x);
+      continue;
+    }
+
+    const int lidColumn = mirrorLids ? (size - 1 - sx) : sx;
 
     int y1 =
         (int)_lowerClosed[lidColumn] +
@@ -1205,9 +1213,15 @@ void Adafruit_Monster_Eyes::renderEye(uint8_t e) {
     else if (y2 < 0)
       y2 = 0;
 
-    if (y1 >= y2) {
-      // Lid closed far enough that no eye pixels show in this column
-      for (int y = 0; y < size; y++, dst += stride)
+    int oy1 = y1 + offY;
+    int oy2 = y2 + offY;
+    if (oy1 < 0)
+      oy1 = 0;
+    if (oy2 > size - 1)
+      oy2 = size - 1;
+
+    if ((y1 >= y2) || (oy1 > oy2)) {
+      for (int yb = 0; yb < size; yb++, dst += stride)
         *dst = eyelidColor;
       _display->columnDone(e, x);
       continue;
@@ -1215,34 +1229,38 @@ void Adafruit_Monster_Eyes::renderEye(uint8_t e) {
 
     // Lower eyelid
     int y = 0;
-    for (; y < y1; y++, dst += stride)
+    for (; y < oy1; y++, dst += stride)
       *dst = eyelidColor;
 
     // Displacement lookup setup for this column. Only one quadrant of the
     // table exists; sign and axis swapping cover the rest.
     const uint8_t *displaceX, *displaceY;
     int8_t xmul;
-    if (x < half) {
-      displaceX = &displace[(half - 1) - x];
-      displaceY = &displace[((half - 1) - x) * half];
+    if (sx < half) {
+      displaceX = &displace[(half - 1) - sx];
+      displaceY = &displace[((half - 1) - sx) * half];
       xmul = -1;
     } else {
-      displaceX = &displace[x - half];
-      displaceY = &displace[(x - half) * half];
+      displaceX = &displace[sx - half];
+      displaceY = &displace[(sx - half) * half];
       xmul = 1;
     }
 
-    const int xx = xPositionOverMap + x;
+    const int xx = xPositionOverMap + sx;
 
-    for (; y <= y2; y++, dst += stride) {
-      const int yy = yPositionOverMap + y;
+    // sy tracks y one row behind the offset, so the hot loop pays an
+    // increment rather than a subtraction per pixel.
+    int sy = oy1 - offY;
+
+    for (; y <= oy2; y++, sy++, dst += stride) {
+      const int yy = yPositionOverMap + sy;
       int doff, dx, dy;
 
-      if (y < half) {
-        doff = (half - 1) - y;
+      if (sy < half) {
+        doff = (half - 1) - sy;
         dy = -(int)displaceY[doff];
       } else {
-        doff = y - half;
+        doff = sy - half;
         dy = (int)displaceY[doff];
       }
       dx = displaceX[doff * half];
