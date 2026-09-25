@@ -398,6 +398,8 @@ bool Adafruit_Monster_Eyes::storageBegin(void) {
 
 void Adafruit_Monster_Eyes::storageEnd(void) { fsMounted = false; }
 
+bool Adafruit_Monster_Eyes::storageMounted(void) const { return fsMounted; }
+
 bool Adafruit_Monster_Eyes::driveModeRequested(void) {
   return eyesSafeModeRequested(_safeModePin);
 }
@@ -678,9 +680,38 @@ static void loadOneEyelid(const char *path, uint8_t *openT, uint8_t *closedT,
   memset(closedT, isUpper ? (uint8_t)(size - 1) : 0, size);
 }
 
-bool Adafruit_Monster_Eyes::mediaLoad(int size, uint32_t texBudget) {
-  if (_lidBlock)
+// Release everything mediaLoad() allocated, and point the renderer back at
+// the 1x1 solid-colour fallbacks so it stays valid in between.
+//
+// Only textures that came from a FILE are freed: when no file loaded, the
+// pointer is the address of a member, not something malloc gave us.
+void Adafruit_Monster_Eyes::freeMedia(void) {
+  if (_lidBlock) {
     free(_lidBlock);
+    _lidBlock = NULL;
+  }
+  _upperOpen = _upperClosed = _lowerOpen = _lowerClosed = NULL;
+
+  if (_irisFromFile && _irisData)
+    free((void *)_irisData);
+  _irisFromFile = false;
+  _irisSolid = out16(_settings.irisColor);
+  _irisData = &_irisSolid;
+  _irisW = _irisH = 1;
+
+  if (_scleraFromFile && _scleraData)
+    free((void *)_scleraData);
+  _scleraFromFile = false;
+  _scleraSolid = out16(_settings.scleraColor);
+  _scleraData = &_scleraSolid;
+  _scleraW = _scleraH = 1;
+}
+
+bool Adafruit_Monster_Eyes::mediaLoad(int size, uint32_t texBudget) {
+  // Release the previous set first. Without this a second call leaks the old
+  // textures, which on a 240px eye is over 100 KB a time.
+  freeMedia();
+
   _lidBlock = (uint8_t *)eyesMalloc((size_t)size * 4); // All four tables
   if (!_lidBlock)
     return false;

@@ -554,6 +554,31 @@ public:
    * @return false if the file is absent or unparseable; settings stay usable.
    */
   bool loadConfig(const char *path = NULL);
+
+  /**
+   * @brief Switch the whole eye to a different configuration file, running.
+   * @param path Configuration file, or NULL to reload the current one.
+   * @return false if the file is missing, unparseable, or too large to fit;
+   *         errorString() says which.
+   */
+  bool loadEye(const char *path = NULL);
+
+  /**
+   * @brief Keep the asset filesystem mounted after begin().
+   *
+   * begin() normally lets go of it, since nothing else reads files. Required
+   * for loadEye(), and the only safe option on RP2 with PicoDVI, where
+   * remounting later would stop the video.
+   *
+   * Call before begin().
+   *
+   * @param on true to stay mounted.
+   */
+  void keepStorageMounted(bool on = true) { _storageKeep = on; }
+
+  /** @brief Is the asset filesystem currently readable? @return true if
+   *  mounted. */
+  bool storageMounted(void) const;
   ///@}
 
   // -----------------------------------------------------------------------
@@ -649,7 +674,7 @@ private:
   };
 
   void applyDefaults(void);
-  void finalizeSettings(void);
+  void finalizeSettings(bool announce = false);
   void seedVariants(void);
   void gazeRadiusInit(void);
   void updateGaze(uint32_t t);
@@ -672,6 +697,7 @@ private:
   bool storageBegin(void);
   void storageEnd(void);
   bool mediaLoad(int size, uint32_t texBudget);
+  void freeMedia(void);
   void applyConfigRoot(const void *variantPtr);
   void applyConfigVariant(const void *variantPtr, EyesVariant &v);
   /** @brief Convert a colour to the byte order the backend wants.
@@ -689,6 +715,7 @@ private:
   const char *_error;     ///< Last failure, or NULL
 
   EyesSettings _settings;                      ///< Live settings
+  EyesSettings _baseSettings;                  ///< State before any config
   EyesVariant _variant[MONSTER_EYES_MAX_EYES]; ///< Per-eye overrides
   EyeState _eye[MONSTER_EYES_MAX_EYES];        ///< Per-eye animation state
 
@@ -756,6 +783,7 @@ private:
   // Options
   const char *_configFile; ///< Path to the JSON configuration
   bool _storageEnabled;    ///< Mount the asset filesystem
+  bool _storageKeep;       ///< Stay mounted after begin(), for loadEye()
   bool _driveModeEnabled;  ///< Offer the USB drive from begin()
   int _safeModePin;        ///< Button GPIO, or -1 for BOOTSEL
   bool _sideRight;         ///< Single-eye build reads the "right" block

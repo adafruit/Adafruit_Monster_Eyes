@@ -69,12 +69,7 @@ Adafruit_Monster_Eyes::Adafruit_Monster_Eyes(Eyes_Display *display) {
 
 Adafruit_Monster_Eyes::~Adafruit_Monster_Eyes() {
   tablesFree();
-  if (_lidBlock)
-    free(_lidBlock);
-  if (_irisFromFile && _irisData)
-    free((void *)_irisData);
-  if (_scleraFromFile && _scleraData)
-    free((void *)_scleraData);
+  freeMedia();
   if (_ownsDisplay && _display)
     delete _display;
 }
@@ -152,6 +147,7 @@ void Adafruit_Monster_Eyes::applyDefaults(void) {
 
   _configFile = "/config.eye";
   _storageEnabled = true;
+  _storageKeep = false;
   _driveModeEnabled = true;
   _safeModePin = EYES_SAFE_MODE_PIN_DEFAULT;
   _sideRight = false;
@@ -225,7 +221,7 @@ void Adafruit_Monster_Eyes::seedVariants(void) {
   }
 }
 
-void Adafruit_Monster_Eyes::finalizeSettings(void) {
+void Adafruit_Monster_Eyes::finalizeSettings(bool announce) {
   // 0 means "fill whatever the display can give one eye"; begin() resolves it
   // once the backend is up. Anything else is clamped to a sane range.
   if (_settings.displaySize != 0) {
@@ -282,12 +278,14 @@ void Adafruit_Monster_Eyes::finalizeSettings(void) {
   // Tolerance: the stock geometry lands within rounding distance of the
   // requirement, and warning about a 0.00003 shortfall is just noise.
   if (_settings.coverage < needCoverage * 0.98f) {
-    EYES_DBG("coverage %.2f too low for eye size %d with eyeRadius %d; "
-             "raising to %.2f\n",
-             _settings.coverage, _settings.displaySize, _settings.eyeRadius,
-             needCoverage);
-    EYES_DBG("  (better fix: set eyeRadius near %d)\n",
-             _settings.displaySize / 2 + 5);
+    if (announce) {
+      EYES_DBG("coverage %.2f too low for eye size %d with eyeRadius %d; "
+               "raising to %.2f\n",
+               _settings.coverage, _settings.displaySize, _settings.eyeRadius,
+               needCoverage);
+      EYES_DBG("  (better fix: set eyeRadius near %d)\n",
+               _settings.displaySize / 2 + 5);
+    }
     _settings.coverage = needCoverage;
   }
   if (_settings.coverage < 0.05f)
@@ -605,11 +603,8 @@ bool Adafruit_Monster_Eyes::begin(void) {
   // this once core1 is already running is asking for the video signal to die
   // while core0 carries on happily. The symptom is a frame counter ticking
   // over a blank monitor.
-  //
-  // Reading files afterwards is fine: those go through the already-open
-  // transport, and the eyelid and texture loads below have to happen after
-  // the display anyway, since the texture budget is whatever heap the tables
-  // leave behind.
+  _baseSettings = _settings;
+
   EYES_DBG("[1] storage\n");
   if (_storageEnabled) {
     if (storageBegin())
@@ -692,6 +687,7 @@ bool Adafruit_Monster_Eyes::begin(void) {
   // where stripe buffers are allocated, and if they were requested afterwards
   // the texture loader could starve them, leaving a running frame counter and
   // a blank screen.
+  finalizeSettings(true); // Idempotent; this is the one that reports
   _size = _settings.displaySize;
   _half = _size / 2;
   gazeRadiusInit();
@@ -715,8 +711,7 @@ bool Adafruit_Monster_Eyes::begin(void) {
     return false;
   }
 
-  // Nothing else reads the filesystem; let go of it so flash stays quiet.
-  if (_storageEnabled)
+  if (_storageEnabled && !_storageKeep)
     storageEnd();
 
   EYES_DBG("Running. Free heap: %u\n", (unsigned)eyesFreeHeap());
@@ -748,6 +743,136 @@ bool Adafruit_Monster_Eyes::begin(void) {
   _lastRateReport = micros();
   _frames = 0;
   _begun = true;
+  return true;
+}
+
+// ===========================================================================
+//  SWITCHING EYES AT RUN TIME
+// ===========================================================================
+
+bool Adafruit_Monster_Eyes::loadEye(const char *path) {
+  if (!path)
+    path = _configFile;
+
+  // Before begin() there is nothing to replace; just remember the choice.
+  if (!_begun) {
+    _configFile = path;
+    return true;
+  }
+  if (!_storageEnabled) {
+    fail("loadEye: storage is disabled");
+    return false;
+  }
+
+  EYES_DBG("\n--- switching to %s ---\n", path);
+  freeMedia();
+
+  const EyesSettings prev = _settings;
+  EyesVariant prevVar[MONSTER_EYES_MAX_EYES];
+  for (uint8_t e = 0; e < _numEyes; e++)
+    prevVar[e] = _variant[e];
+  const int prevSize = _settings.displaySize;
+
+  if (!storageMounted()) {
+    EYES_DBG("loadEye: remounting the filesystem. Set keepStorageMounted(true)"
+             " before begin() to avoid this.\n");
+    if (!storageBegin()) {
+      fail("loadEye: filesystem would not mount");
+      mediaLoad(_size, 0); // Put the old eye's fallbacks back
+      return false;
+    }
+  }
+
+  _settings = _baseSettings;
+  seedVariants();
+
+  const bool read = loadConfig(path);
+  if (read) {
+    _configFile = path;
+  } else {
+    _settings = prev;
+    for (uint8_t e = 0; e < _numEyes; e++)
+      _variant[e] = prevVar[e];
+  }
+
+  finalizeSettings();
+  const int maxSize = _display->maxEyeSize();
+  if (_settings.displaySize <= 0)
+    _settings.displaySize = maxSize;
+  if (_settings.displaySize > maxSize)
+    _settings.displaySize = maxSize;
+  finalizeSettings(true); // The one that reports, as in begin()
+
+  _irisMin = 1.0f - _settings.pupilMax;
+  _irisRange = _settings.pupilMax - _settings.pupilMin;
+  if (_irisValue < _irisMin)
+    _irisValue = _irisMin;
+  else if (_irisValue > _irisMin + _irisRange)
+    _irisValue = _irisMin + _irisRange;
+
+  const bool geometryMoved =
+      (_settings.displaySize != prevSize) ||
+      (_settings.eyeRadius != prev.eyeRadius) ||
+      (_settings.irisRadius != prev.irisRadius) ||
+      (_settings.slitPupilRadius != prev.slitPupilRadius) ||
+      (_settings.coverage != prev.coverage);
+
+  if (geometryMoved) {
+    EYES_DBG("Geometry changed; rebuilding tables\n");
+    tablesFree();
+    if (!tablesInit()) {
+      EYES_ERR("loadEye: no room for the new tables; keeping the old eye\n");
+      _settings = prev;
+      tablesFree();
+      if (!tablesInit()) {
+        fail("loadEye: lost the eye tables and could not rebuild them");
+        return false;
+      }
+    }
+
+    if (_settings.displaySize != prevSize) {
+      _size = _settings.displaySize;
+      _half = _size / 2;
+      if (!_display->setEyeSize(_size)) {
+        fail("loadEye: display could not resize its buffers");
+        return false;
+      }
+    }
+    gazeRadiusInit();
+
+    _eyeOldX = _eyeNewX = _eyeOldY = _eyeNewY = (float)_mapRadius;
+    _frameEyeX = _frameEyeY = (float)_mapRadius;
+    _eyeInMotion = false;
+  }
+
+  for (uint8_t e = 0; e < _numEyes; e++) {
+    _eye[e].irisSpin = -1024.0f * _variant[e].irisSpin;
+    _eye[e].irisStartAngle = _variant[e].irisStartAngle;
+    _eye[e].scleraSpin = -1024.0f * _variant[e].scleraSpin;
+    _eye[e].scleraStartAngle = _variant[e].scleraStartAngle;
+  }
+
+  _display->clear(_settings.eyelidColor);
+
+  const uint32_t freeHeap = eyesLargestFreeBlock();
+  const uint32_t texBudget = (freeHeap > MONSTER_EYES_HEAP_RESERVE)
+                                 ? (freeHeap - MONSTER_EYES_HEAP_RESERVE)
+                                 : 0;
+  const bool loaded = mediaLoad(_size, texBudget);
+
+  if (!_storageKeep)
+    storageEnd();
+
+  if (!loaded) {
+    fail("loadEye: eyelid table allocation failed");
+    return false;
+  }
+  if (!read) {
+    fail("loadEye: could not read the configuration file");
+    return false;
+  }
+
+  EYES_DBG("Now showing %s. Free heap: %u\n", path, (unsigned)eyesFreeHeap());
   return true;
 }
 
