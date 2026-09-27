@@ -752,9 +752,12 @@ bool Adafruit_Monster_Eyes::begin(void) {
 // ===========================================================================
 
 bool Adafruit_Monster_Eyes::loadEye(const char *path) {
-  prepareEye(path);
-  applyEye(path);
-  return true;
+
+  if(prepareEye(path)) {
+    applyEye(path);
+    return true;
+  }
+  return false;
 }
 
 bool Adafruit_Monster_Eyes::prepareEye(const char *path) {
