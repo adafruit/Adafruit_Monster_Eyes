@@ -752,6 +752,12 @@ bool Adafruit_Monster_Eyes::begin(void) {
 // ===========================================================================
 
 bool Adafruit_Monster_Eyes::loadEye(const char *path) {
+  prepareEye(path);
+  applyEye(path);
+  return true;
+}
+
+bool Adafruit_Monster_Eyes::prepareEye(const char *path) {
   if (!path)
     path = _configFile;
 
@@ -761,24 +767,22 @@ bool Adafruit_Monster_Eyes::loadEye(const char *path) {
     return true;
   }
   if (!_storageEnabled) {
-    fail("loadEye: storage is disabled");
+    fail("prepareEye: storage is disabled");
     return false;
   }
 
   EYES_DBG("\n--- switching to %s ---\n", path);
   freeMedia();
 
-  const EyesSettings prev = _settings;
-  EyesVariant prevVar[MONSTER_EYES_MAX_EYES];
+  _prevSettings = _settings;
   for (uint8_t e = 0; e < _numEyes; e++)
-    prevVar[e] = _variant[e];
-  const int prevSize = _settings.displaySize;
+    _prevVariant[e] = _variant[e];
 
   if (!storageMounted()) {
-    EYES_DBG("loadEye: remounting the filesystem. Set keepStorageMounted(true)"
+    EYES_DBG("prepareEye: remounting the filesystem. Set keepStorageMounted(true)"
              " before begin() to avoid this.\n");
     if (!storageBegin()) {
-      fail("loadEye: filesystem would not mount");
+      fail("prepareEye: filesystem would not mount");
       mediaLoad(_size, 0); // Put the old eye's fallbacks back
       return false;
     }
@@ -791,10 +795,16 @@ bool Adafruit_Monster_Eyes::loadEye(const char *path) {
   if (read) {
     _configFile = path;
   } else {
-    _settings = prev;
+    _settings = _prevSettings;
     for (uint8_t e = 0; e < _numEyes; e++)
-      _variant[e] = prevVar[e];
+      _variant[e] = _prevVariant[e];
   }
+
+  return true;
+}
+
+bool Adafruit_Monster_Eyes::applyEye(const char *path) {
+  const int prevSize = _settings.displaySize;
 
   finalizeSettings();
   const int maxSize = _display->maxEyeSize();
@@ -813,20 +823,20 @@ bool Adafruit_Monster_Eyes::loadEye(const char *path) {
 
   const bool geometryMoved =
       (_settings.displaySize != prevSize) ||
-      (_settings.eyeRadius != prev.eyeRadius) ||
-      (_settings.irisRadius != prev.irisRadius) ||
-      (_settings.slitPupilRadius != prev.slitPupilRadius) ||
-      (_settings.coverage != prev.coverage);
+      (_settings.eyeRadius != _prevSettings.eyeRadius) ||
+      (_settings.irisRadius != _prevSettings.irisRadius) ||
+      (_settings.slitPupilRadius != _prevSettings.slitPupilRadius) ||
+      (_settings.coverage != _prevSettings.coverage);
 
   if (geometryMoved) {
     EYES_DBG("Geometry changed; rebuilding tables\n");
     tablesFree();
     if (!tablesInit()) {
-      EYES_ERR("loadEye: no room for the new tables; keeping the old eye\n");
-      _settings = prev;
+      EYES_ERR("applyEye: no room for the new tables; keeping the old eye\n");
+      _settings = _prevSettings;
       tablesFree();
       if (!tablesInit()) {
-        fail("loadEye: lost the eye tables and could not rebuild them");
+        fail("applyEye: lost the eye tables and could not rebuild them");
         return false;
       }
     }
@@ -835,7 +845,7 @@ bool Adafruit_Monster_Eyes::loadEye(const char *path) {
       _size = _settings.displaySize;
       _half = _size / 2;
       if (!_display->setEyeSize(_size)) {
-        fail("loadEye: display could not resize its buffers");
+        fail("applyEye: display could not resize its buffers");
         return false;
       }
     }
@@ -865,11 +875,11 @@ bool Adafruit_Monster_Eyes::loadEye(const char *path) {
     storageEnd();
 
   if (!loaded) {
-    fail("loadEye: eyelid table allocation failed");
+    fail("applyEye: eyelid table allocation failed");
     return false;
   }
   if (!read) {
-    fail("loadEye: could not read the configuration file");
+    fail("applyEye: could not read the configuration file");
     return false;
   }
 
