@@ -88,6 +88,11 @@ public:
   void setOrientation(bool invert, bool swapXY = false, bool mirrorX = false,
                       bool mirrorY = false);
 
+#if MONSTER_EYES_MAX_EYES > 1
+  void setPerPanelOrientation(bool invert, bool swapXY0 = false, bool swapXY1 = false,
+              bool mirrorX0 = false, bool mirrorX1 = false, bool mirrorY0 = false, bool mirrorY1 = false);
+#endif 
+
   /**
    * @brief Backlight enable pin. Call before begin().
    * @param pin GPIO driven high after init, or -1 if not switchable.
@@ -120,9 +125,9 @@ private:
   int _host;                           ///< SPI host
   int _backlight;                      ///< Backlight GPIO, or -1
   bool _invert;                        ///< Invert colours
-  bool _swapXY;                        ///< Exchange rows and columns
-  bool _mirrorX;                       ///< Mirror horizontally
-  bool _mirrorY;                       ///< Mirror vertically
+  bool _swapXY[MONSTER_EYES_MAX_EYES]; ///< Exchange rows and columns per panel
+  bool _mirrorX[MONSTER_EYES_MAX_EYES];///< Mirror horizontally per panel
+  bool _mirrorY[MONSTER_EYES_MAX_EYES];///< Mirror vertically per panel
 };
 
 #endif // ARDUINO_ARCH_ESP32

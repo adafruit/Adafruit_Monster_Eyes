@@ -67,7 +67,7 @@ Eyes_ESPLCD::Eyes_ESPLCD(EyesESPLCDDriver driver, int width, int height,
                          int dc1, int rst1)
     : Eyes_StripeDisplay((cs1 >= 0) ? 2 : 1, 16), _driver(driver), _sck(sck),
       _mosi(mosi), _pclkHz(40000000), _host(SPI2_HOST), _backlight(-1),
-      _invert(true), _swapXY(false), _mirrorX(false), _mirrorY(false) {
+      _invert(true) {
   _panelW = width;
   _panelH = height;
   _cs[0] = cs0;
@@ -75,20 +75,28 @@ Eyes_ESPLCD::Eyes_ESPLCD(EyesESPLCDDriver driver, int width, int height,
   _rst[0] = rst0;
   _io[0] = NULL;
   _panel[0] = NULL;
+  _swapXY[0] = false;
+  _mirrorX[0] = false;
+  _mirrorY[0] = false;
 #if MONSTER_EYES_MAX_EYES > 1
   _cs[1] = cs1;
   _dc[1] = (dc1 >= 0) ? dc1 : dc0;
   _rst[1] = (rst1 >= 0) ? rst1 : rst0;
   _io[1] = NULL;
   _panel[1] = NULL;
+  _swapXY[1] = false;
+  _mirrorX[1] = false;
+  _mirrorY[1] = false;
 #else
   (void)cs1;
   (void)dc1;
   (void)rst1;
 #endif
   // GC9A01A's stock orientation wants a horizontal mirror.
-  if (driver == EYES_ESPLCD_GC9A01A)
-    _mirrorX = false; // its vendor MADCTL already sets MX
+  if (driver == EYES_ESPLCD_GC9A01A) {
+    _mirrorX[0] = false; // its vendor MADCTL already sets MX
+    _mirrorX[1] = false; // its vendor MADCTL already sets MX
+  }
 }
 
 Eyes_ESPLCD::~Eyes_ESPLCD() {}
@@ -96,10 +104,29 @@ Eyes_ESPLCD::~Eyes_ESPLCD() {}
 void Eyes_ESPLCD::setOrientation(bool invert, bool swapXY, bool mirrorX,
                                  bool mirrorY) {
   _invert = invert;
-  _swapXY = swapXY;
-  _mirrorX = mirrorX;
-  _mirrorY = mirrorY;
+  _swapXY[0] = swapXY;
+  _mirrorX[0] = mirrorX;
+  _mirrorY[0] = mirrorY;
+
+#if MONSTER_EYES_MAX_EYES > 1
+  _swapXY[1] = swapXY;
+  _mirrorX[1] = mirrorX;
+  _mirrorY[1] = mirrorY;
+#endif 
 }
+
+#if MONSTER_EYES_MAX_EYES > 1
+void Eyes_ESPLCD::setPerPanelOrientation(bool invert, bool swapXY0, bool swapXY1,
+              bool mirrorX0, bool mirrorX1, bool mirrorY0, bool mirrorY1) {
+  _invert = invert;
+  _swapXY[0] = swapXY0;
+  _mirrorX[0] = mirrorX0;
+  _mirrorY[0] = mirrorY0;
+  _swapXY[1] = swapXY1;
+  _mirrorX[1] = mirrorX1;
+  _mirrorY[1] = mirrorY1;
+}
+#endif
 
 void Eyes_ESPLCD::panelSize(int *w, int *h) {
   *w = _panelW;
@@ -216,8 +243,8 @@ bool Eyes_ESPLCD::begin(void) {
       esp_lcd_panel_init(ph);
     }
     esp_lcd_panel_invert_color(ph, _invert);
-    esp_lcd_panel_swap_xy(ph, _swapXY);
-    esp_lcd_panel_mirror(ph, _mirrorX, _mirrorY);
+    esp_lcd_panel_swap_xy(ph, _swapXY[e]);
+    esp_lcd_panel_mirror(ph, _mirrorX[e], _mirrorY[e]);
     esp_lcd_panel_disp_on_off(ph, true);
     s_pending[e] = 0;
     EYES_DBG("  esp_lcd panel %d ready (CS=GPIO%d DC=GPIO%d)\n", e, _cs[e],
