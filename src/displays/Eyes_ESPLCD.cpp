@@ -112,12 +112,14 @@ void Eyes_ESPLCD::setOrientation(bool invert, bool swapXY, bool mirrorX,
   _swapXY[1] = swapXY;
   _mirrorX[1] = mirrorX;
   _mirrorY[1] = mirrorY;
-#endif 
+#endif
 }
 
 #if MONSTER_EYES_MAX_EYES > 1
-void Eyes_ESPLCD::setPerPanelOrientation(bool invert, bool swapXY0, bool swapXY1,
-              bool mirrorX0, bool mirrorX1, bool mirrorY0, bool mirrorY1) {
+void Eyes_ESPLCD::setPerPanelOrientation(bool invert, bool swapXY0,
+                                         bool swapXY1, bool mirrorX0,
+                                         bool mirrorX1, bool mirrorY0,
+                                         bool mirrorY1) {
   _invert = invert;
   _swapXY[0] = swapXY0;
   _mirrorX[0] = mirrorX0;

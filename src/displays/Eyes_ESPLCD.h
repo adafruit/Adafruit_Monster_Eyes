@@ -89,9 +89,11 @@ public:
                       bool mirrorY = false);
 
 #if MONSTER_EYES_MAX_EYES > 1
-  void setPerPanelOrientation(bool invert, bool swapXY0 = false, bool swapXY1 = false,
-              bool mirrorX0 = false, bool mirrorX1 = false, bool mirrorY0 = false, bool mirrorY1 = false);
-#endif 
+  void setPerPanelOrientation(bool invert, bool swapXY0 = false,
+                              bool swapXY1 = false, bool mirrorX0 = false,
+                              bool mirrorX1 = false, bool mirrorY0 = false,
+                              bool mirrorY1 = false);
+#endif
 
   /**
    * @brief Backlight enable pin. Call before begin().
@@ -113,21 +115,21 @@ private:
   void drain(int eye, int limit);
   void fillPanel(int eye, uint16_t color);
 
-  EyesESPLCDDriver _driver;            ///< Panel controller
-  int _sck;                            ///< SPI clock GPIO
-  int _mosi;                           ///< SPI data-out GPIO
-  int _cs[MONSTER_EYES_MAX_EYES];      ///< Chip select per panel
-  int _dc[MONSTER_EYES_MAX_EYES];      ///< Data/command per panel
-  int _rst[MONSTER_EYES_MAX_EYES];     ///< Reset per panel
-  void *_io[MONSTER_EYES_MAX_EYES];    ///< esp_lcd_panel_io_handle_t
-  void *_panel[MONSTER_EYES_MAX_EYES]; ///< esp_lcd_panel_handle_t
-  uint32_t _pclkHz;                    ///< Pixel clock
-  int _host;                           ///< SPI host
-  int _backlight;                      ///< Backlight GPIO, or -1
-  bool _invert;                        ///< Invert colours
-  bool _swapXY[MONSTER_EYES_MAX_EYES]; ///< Exchange rows and columns per panel
-  bool _mirrorX[MONSTER_EYES_MAX_EYES];///< Mirror horizontally per panel
-  bool _mirrorY[MONSTER_EYES_MAX_EYES];///< Mirror vertically per panel
+  EyesESPLCDDriver _driver;             ///< Panel controller
+  int _sck;                             ///< SPI clock GPIO
+  int _mosi;                            ///< SPI data-out GPIO
+  int _cs[MONSTER_EYES_MAX_EYES];       ///< Chip select per panel
+  int _dc[MONSTER_EYES_MAX_EYES];       ///< Data/command per panel
+  int _rst[MONSTER_EYES_MAX_EYES];      ///< Reset per panel
+  void *_io[MONSTER_EYES_MAX_EYES];     ///< esp_lcd_panel_io_handle_t
+  void *_panel[MONSTER_EYES_MAX_EYES];  ///< esp_lcd_panel_handle_t
+  uint32_t _pclkHz;                     ///< Pixel clock
+  int _host;                            ///< SPI host
+  int _backlight;                       ///< Backlight GPIO, or -1
+  bool _invert;                         ///< Invert colours
+  bool _swapXY[MONSTER_EYES_MAX_EYES];  ///< Exchange rows and columns per panel
+  bool _mirrorX[MONSTER_EYES_MAX_EYES]; ///< Mirror horizontally per panel
+  bool _mirrorY[MONSTER_EYES_MAX_EYES]; ///< Mirror vertically per panel
 };
 
 #endif // ARDUINO_ARCH_ESP32
