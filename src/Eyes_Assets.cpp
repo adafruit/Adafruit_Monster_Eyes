@@ -423,6 +423,13 @@ void Adafruit_Monster_Eyes::runDriveMode(void) {
   usb_msc.setUnitReady(true);
   usb_msc.begin();
 
+  // If already enumerated, additional class driverr begin() e.g msc, hid, midi won't take effect until re-enumeration
+  if (TinyUSBDevice.mounted()) {
+    TinyUSBDevice.detach();
+    delay(10);
+    TinyUSBDevice.attach();
+  }
+
   EYES_DBG("Drive exported. Rebooting automatically once writes stop.\n");
 
 #ifdef LED_BUILTIN
