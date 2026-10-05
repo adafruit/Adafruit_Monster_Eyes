@@ -423,7 +423,8 @@ void Adafruit_Monster_Eyes::runDriveMode(void) {
   usb_msc.setUnitReady(true);
   usb_msc.begin();
 
-  // If already enumerated, additional class driverr begin() e.g msc, hid, midi won't take effect until re-enumeration
+  // If already enumerated, additional class driver begin() e.g msc, hid, midi
+  // won't take effect until re-enumeration
   if (TinyUSBDevice.mounted()) {
     TinyUSBDevice.detach();
     delay(10);
