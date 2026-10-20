@@ -572,11 +572,30 @@ public:
 
   /**
    * @brief Switch the whole eye to a different configuration file, running.
+   * 
+   * Equivalent to calling prepareEye() followed by applyEye()
+   * 
    * @param path Configuration file, or NULL to reload the current one.
    * @return false if the file is missing, unparseable, or too large to fit;
    *         errorString() says which.
    */
   bool loadEye(const char *path = NULL);
+
+  /**
+   * @brief Start switching the whole eye to a different configuration file, running.
+   * @param path Configuration file, or NULL to reload the current one.
+   * @return false if the file is missing, unparseable, or too large to fit;
+   *         errorString() says which.
+   */
+  bool prepareEye(const char *path = NULL);
+
+  /**
+   * @brief Finish switching the whole eye to a different configuration file, running.
+   * @param path Configuration file, or NULL to reload the current one.
+   * @return false if the file is missing, unparseable, or too large to fit;
+   *         errorString() says which.
+   */
+  bool applyEye(const char *path = NULL);
 
   /**
    * @brief Keep the asset filesystem mounted after begin().
@@ -729,10 +748,12 @@ private:
   bool _begun;            ///< begin() has succeeded
   const char *_error;     ///< Last failure, or NULL
 
-  EyesSettings _settings;                      ///< Live settings
-  EyesSettings _baseSettings;                  ///< State before any config
-  EyesVariant _variant[MONSTER_EYES_MAX_EYES]; ///< Per-eye overrides
-  EyeState _eye[MONSTER_EYES_MAX_EYES];        ///< Per-eye animation state
+  EyesSettings _settings;                          ///< Live settings
+  EyesSettings _prevSettings;                      ///< Live settings
+  EyesSettings _baseSettings;                      ///< State before any config
+  EyesVariant _variant[MONSTER_EYES_MAX_EYES];     ///< Per-eye overrides
+  EyesVariant _prevVariant[MONSTER_EYES_MAX_EYES]; ///< Per-eye overrides
+  EyeState _eye[MONSTER_EYES_MAX_EYES];            ///< Per-eye animation state
 
   // Geometry
   int _size;         ///< Rendered eye size in pixels
