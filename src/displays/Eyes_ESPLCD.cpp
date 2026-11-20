@@ -195,8 +195,8 @@ bool Eyes_ESPLCD::begin(void) {
 
   for (int e = 0; e < _numEyes; e++) {
     esp_lcd_panel_io_spi_config_t io = {};
-    io.cs_gpio_num = _cs[e];
-    io.dc_gpio_num = _dc[e];
+    io.cs_gpio_num = (gpio_num_t)_cs[e];
+    io.dc_gpio_num = (gpio_num_t)_dc[e];
     io.spi_mode = 0;
     io.pclk_hz = _pclkHz;
     io.trans_queue_depth = 4;
@@ -215,7 +215,7 @@ bool Eyes_ESPLCD::begin(void) {
 
     esp_lcd_panel_dev_config_t pc = {};
     // Reset is driven once, above, so the panel object must not touch it.
-    pc.reset_gpio_num = -1;
+    pc.reset_gpio_num = GPIO_NUM_NC; // -1, "not connected"
     pc.bits_per_pixel = 16;
     // GC9A01A wants BGR element order.
     const bool bgr = (_driver == EYES_ESPLCD_GC9A01A);
