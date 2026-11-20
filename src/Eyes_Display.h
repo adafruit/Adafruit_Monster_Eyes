@@ -44,7 +44,13 @@
  */
 class Eyes_Display {
 public:
+  /**
+   * @brief Construct a backend for one or more eyes.
+   * @param numEyes Eyes this backend drives; clamped to
+   *                1..MONSTER_EYES_MAX_EYES.
+   */
   Eyes_Display(uint8_t numEyes = 1);
+  /** @brief Destructor. */
   virtual ~Eyes_Display();
 
   /**

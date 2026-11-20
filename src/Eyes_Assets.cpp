@@ -30,6 +30,13 @@
 #include <Adafruit_SPIFlash.h>
 #include <Adafruit_TinyUSB.h>
 #include <ArduinoJson.h>
+
+// USB drive mode needs TinyUSB's DEVICE stack with the MSC class
+#if CFG_TUD_ENABLED && CFG_TUD_MSC
+#define EYES_HAS_DRIVE_MODE 1 ///< TinyUSB device stack: drive mode built
+#else
+#define EYES_HAS_DRIVE_MODE 0 ///< No device stack: drive mode compiled out
+#endif
 #include <SPI.h>
 #include <math.h>
 #include <stdlib.h>
@@ -353,6 +360,7 @@ public:
 //  2. STORAGE
 // ===========================================================================
 
+#if EYES_HAS_DRIVE_MODE
 static Adafruit_USBD_MSC usb_msc;
 static volatile bool mscWritten = false;
 static volatile uint32_t lastWriteMillis = 0;
@@ -375,6 +383,7 @@ static void mscFlushCb(void) {
   fatfs.cacheClear();
   lastWriteMillis = millis();
 }
+#endif // EYES_HAS_DRIVE_MODE
 
 bool Adafruit_Monster_Eyes::storageBegin(void) {
   if (!flash.begin()) {
@@ -401,10 +410,22 @@ void Adafruit_Monster_Eyes::storageEnd(void) { fsMounted = false; }
 bool Adafruit_Monster_Eyes::storageMounted(void) const { return fsMounted; }
 
 bool Adafruit_Monster_Eyes::driveModeRequested(void) {
+#if EYES_HAS_DRIVE_MODE
   return eyesSafeModeRequested(_safeModePin);
+#else
+  // Still read the button, so someone holding it learns why nothing happened.
+  if (eyesSafeModeRequested(_safeModePin))
+    EYES_ERR("USB drive mode is not available in this build: it needs the "
+             "TinyUSB device stack (check Tools > USB Mode / USB Stack).\n");
+  return false;
+#endif
 }
 
 void Adafruit_Monster_Eyes::runDriveMode(void) {
+#if !EYES_HAS_DRIVE_MODE
+  EYES_ERR("runDriveMode(): no TinyUSB device stack in this build.\n");
+  return;
+#else
   EYES_DBG("=== USB DRIVE MODE ===\n");
   EYES_DBG("The display is intentionally off. Copy files, then eject.\n");
 
@@ -457,6 +478,7 @@ void Adafruit_Monster_Eyes::runDriveMode(void) {
     }
     delay(5);
   }
+#endif // EYES_HAS_DRIVE_MODE
 }
 
 // ===========================================================================
