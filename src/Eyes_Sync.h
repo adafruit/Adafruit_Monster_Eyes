@@ -39,10 +39,6 @@
 
 #define EYES_SYNC_MAGIC 0xA5 ///< First byte of a sync packet
 
-// Spelled as a macro so doxygen can be told to expand it to nothing; it
-// cannot parse a bare attribute on a struct.
-#define EYES_PACKED __attribute__((packed)) ///< No padding between fields
-
 /**
  * @brief State the two boards must agree on, sent once per frame.
  *
@@ -50,6 +46,7 @@
  * rotation is derived from time rather than sent, so carrying the clock keeps
  * both eyes spinning in step.
  */
+#pragma pack(push, 1)
 struct EyesSyncPacket {
   uint8_t magic; ///< Frame marker, EYES_SYNC_MAGIC
   int16_t eyeX;  ///< Gaze target in map pixels
@@ -58,7 +55,8 @@ struct EyesSyncPacket {
   uint8_t blink; ///< Blink phase, 0 open to 255 shut
   uint32_t ms;   ///< Primary's millis(), so iris rotation stays in step
   uint8_t sum;   ///< XOR of every preceding byte
-} EYES_PACKED;
+};
+#pragma pack(pop)
 
 /**
  * @brief Broadcasts this board's animation state to a secondary.

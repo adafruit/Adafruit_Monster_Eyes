@@ -33,9 +33,9 @@
 
 // USB drive mode needs TinyUSB's DEVICE stack with the MSC class
 #if CFG_TUD_ENABLED && CFG_TUD_MSC
-#define EYES_HAS_DRIVE_MODE 1
+#define EYES_HAS_DRIVE_MODE 1 ///< TinyUSB device stack: drive mode built
 #else
-#define EYES_HAS_DRIVE_MODE 0
+#define EYES_HAS_DRIVE_MODE 0 ///< No device stack: drive mode compiled out
 #endif
 #include <SPI.h>
 #include <math.h>
